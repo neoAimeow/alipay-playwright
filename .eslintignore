@@ -1,0 +1,5 @@
+node_modules
+dist
+package-lock.json
+.electron-vendors.cache.json
+.eslintrc.cjs
