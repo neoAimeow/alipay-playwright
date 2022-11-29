@@ -7,3 +7,6 @@ dist
 db.sqlite
 
 .vscode
+/test-results/
+/playwright-report/
+/playwright/.cache/
