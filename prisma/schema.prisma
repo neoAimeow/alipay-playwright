@@ -10,6 +10,24 @@ datasource db {
   url      = "file:./../buildResources/db.sqlite"
 }
 
-model Example {
-  id String @id @default(uuid())
+model Account {
+  id       Int           @id @default(autoincrement())
+  account  String
+  password String
+  isShort  Boolean       @default(true)
+  valid    Boolean       @default(true)
+  orders   OrderRecord[]
+}
+
+model OrderRecord {
+  id        Int     @id @default(autoincrement())
+  accountId Int
+  payment   Float
+  Account   Account @relation(fields: [accountId], references: [id])
+}
+
+model Cache {
+  id    Int    @id @default(autoincrement())
+  key   String
+  value String
 }

@@ -1,0 +1,77 @@
+import React from "react";
+import logo from "../../assets/logo.png";
+import { UserOutlined } from "@ant-design/icons";
+import type { MenuProps } from "antd";
+import { Layout, Menu } from "antd";
+import "./style.css";
+import { Outlet, useNavigate } from "react-router-dom";
+const { Header, Content, Footer, Sider } = Layout;
+
+const items: MenuProps["items"] = [
+  { key: "1", icon: React.createElement(UserOutlined), label: "帐号管理" },
+  { key: "2", icon: React.createElement(UserOutlined), label: "运行日志" },
+];
+const HomeView: React.FC = () => {
+  const navigate = useNavigate();
+
+  const onClick: MenuProps["onClick"] = (e) => {
+    console.log("click ", e);
+    switch (e.key) {
+      case "1":
+        navigate("account");
+        break;
+      case "2":
+        navigate("log");
+        break;
+    }
+  };
+  return (
+    <div className="home-view">
+      <Layout hasSider>
+        <Sider
+          theme="light"
+          width="300px"
+          style={{
+            overflow: "auto",
+            height: "100vh",
+            position: "fixed",
+            left: 0,
+            top: 0,
+            bottom: 0,
+          }}
+        >
+          <div className="logo">
+            <img width="200" alt="logo" src={logo} />
+          </div>
+          <Menu
+            theme="light"
+            mode="inline"
+            defaultSelectedKeys={["1"]}
+            onClick={onClick}
+            items={items}
+          />
+        </Sider>
+        <Layout className="site-layout" style={{ marginLeft: 300 }}>
+          <Header
+            className="site-layout-background"
+            style={{ padding: 0, backgroundColor: "#ffffff" }}
+          />
+          <Content
+            style={{
+              margin: "24px 16px 0",
+              overflow: "initial",
+              minHeight: "100vh",
+            }}
+          >
+            <Outlet />
+          </Content>
+          <Footer style={{ textAlign: "center" }}>
+            Ant Design ©2018 Created by Ant UED
+          </Footer>
+        </Layout>
+      </Layout>
+    </div>
+  );
+};
+
+export default HomeView;

@@ -1,7 +1,5 @@
 import { useState } from "react";
-import "./App.css";
-import { trpc } from "./utils/trpc";
-import Home from "./Home";
+import { trpc } from "../../utils/trpc";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TRPCClientError, TRPCClientRuntime } from "@trpc/client";
 import type { TRPCLink } from "@trpc/client";
@@ -13,11 +11,15 @@ import {
   TRPCResultMessage,
 } from "@trpc/server/rpc";
 
-// from @trpc/client/src/links/internals/transformResult
-// FIXME:
-// - the generics here are probably unnecessary
-// - the RPC-spec could probably be simplified to combine HTTP + WS
-/** @internal */
+import "./App.css";
+import axios from "axios";
+import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
+import HomeView from "./pages/home-page/home-view";
+import AccountView from "./pages/account-manager/account-view";
+import LogView from "./pages/log-view/log-view";
+import LoginView from "./pages/login-view/login-view";
+export const switchUrl = "http://rlaecyw7w.bkt.clouddn.com/switch.json";
+
 function transformResult<TRouter extends AnyRouter, TOutput>(
   response:
     | TRPCResponseMessage<TOutput, inferRouterError<TRouter>>
@@ -82,13 +84,37 @@ function App() {
       links: [ipcLink()],
     });
   });
+  const [valid, setValid] = useState(false);
 
-  return (
+  axios
+    .get(switchUrl)
+    .then((res: { data: { isAppValid: boolean } }) => {
+      const { isAppValid } = res.data;
+      setValid(isAppValid);
+    })
+    .catch(() => {
+      setValid(false);
+    });
+
+  return valid ? (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <Home />
+        <Router>
+          <Routes>
+            <Route path="/" element={<HomeView />}>
+              {/* <Route index element={<Dashboard />} /> */}
+              <Route path="/account" element={<AccountView />} />
+
+              <Route index element={<AccountView />} />
+              <Route path="/log" element={<LogView />} />
+            </Route>
+            <Route path="/home" element={<LoginView />} />
+          </Routes>
+        </Router>
       </QueryClientProvider>
     </trpc.Provider>
+  ) : (
+    <div>该应用不可用。请联系开发者</div>
   );
 }
 

@@ -12,10 +12,8 @@ import type { TRPCResponse, TRPCResponseMessage } from "@trpc/server/rpc";
 import { createContext } from "../api/context";
 import { appRouter } from "../api/router";
 import type { IPCRequestOptions, IPCResponse } from "../types";
+import { launchPlaywright } from "../utils/playwright";
 
-/**
- * Prevent electron from running multiple instances.
- */
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
   app.quit();
@@ -27,32 +25,20 @@ app.on("second-instance", () => {
   });
 });
 
-/**
- * Disable Hardware Acceleration to save more system resources.
- */
 app.disableHardwareAcceleration();
 
-/**
- * Shout down background process if all windows was closed
- */
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
-/**
- * @see https://www.electronjs.org/docs/latest/api/app#event-activate-macos Event: 'activate'.
- */
 app.on("activate", () => {
   restoreOrCreateWindow().catch((err) => {
     throw err;
   });
 });
 
-/**
- * Create the application window when the background process is ready.
- */
 app
   .whenReady()
   .then(async () => {
@@ -62,32 +48,9 @@ app
   })
   .catch((e) => console.error("Failed create window:", e));
 
-/**
- * Install React devtools in dev mode
- * works, but throws errors so it's commented out until these issues are resolved:
- * - https://github.com/MarshallOfSound/electron-devtools-installer/issues/220
- * - https://github.com/electron/electron/issues/32133
- * Note: You must install `electron-devtools-installer` manually
- */
-// if (import.meta.env.DEV) {
-//   app
-//     .whenReady()
-//     .then(() => import("electron-devtools-installer"))
-//     .then(async ({ default: installExtension, REACT_DEVELOPER_TOOLS }) => {
-//       await installExtension(REACT_DEVELOPER_TOOLS, {
-//         loadExtensionOptions: {
-//           allowFileAccess: true,
-//         },
-//       });
-//     })
-//     .catch((e) => console.error("Failed install extension:", e));
-// }
-
-// from @trpc/server/src/internals/transformTRPCResonse
 function transformTRPCResponseItem<
   TResponseItem extends TRPCResponse | TRPCResponseMessage
 >(router: AnyRouter, item: TResponseItem): TResponseItem {
-  // explicitly use appRouter instead of router argument: https://github.com/trpc/trpc/issues/2804
   if ("error" in item) {
     return {
       ...item,
@@ -112,7 +75,6 @@ function transformTRPCResponseItem<
   return item;
 }
 
-// from @trpc/server/src/error/utils
 function getMessageFromUnkownError(err: unknown, fallback: string): string {
   if (typeof err === "string") {
     return err;
@@ -124,7 +86,6 @@ function getMessageFromUnkownError(err: unknown, fallback: string): string {
   return fallback;
 }
 
-// from @trpc/server/src/error/utils
 function getErrorFromUnknown(cause: unknown): Error {
   if (cause instanceof Error) {
     return cause;
@@ -133,11 +94,8 @@ function getErrorFromUnknown(cause: unknown): Error {
   return new Error(message);
 }
 
-// from @trpc/server/src/error/utils
 function getTRPCErrorFromUnknown(cause: unknown): TRPCError {
   const error = getErrorFromUnknown(cause);
-  // this should ideally be an `instanceof TRPCError` but for some reason that isn't working
-  // ref https://github.com/trpc/trpc/issues/331
   if (error.name === "TRPCError") {
     return cause as TRPCError;
   }
@@ -148,7 +106,6 @@ function getTRPCErrorFromUnknown(cause: unknown): TRPCError {
     message: error.message,
   });
 
-  // Inherit stack from error
   trpcError.stack = error.stack;
 
   return trpcError;
@@ -162,10 +119,8 @@ function validateSender(frame: Electron.WebFrameMain) {
     import.meta.env.DEV &&
     import.meta.env.VITE_DEV_SERVER_URL !== undefined
   ) {
-    // during dev
     if (frameUrlObj.host === pageUrlObj.host) return true;
   } else {
-    // during prod and test
     if (frameUrlObj.protocol === "file:") return true;
   }
 
@@ -173,7 +128,6 @@ function validateSender(frame: Electron.WebFrameMain) {
 }
 
 export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
-  // https://www.electronjs.org/docs/latest/tutorial/security#17-validate-the-sender-of-all-ipc-messages
   ipcMain.handle(
     "electron-trpc",
     (event: Electron.IpcMainInvokeEvent, opts: IPCRequestOptions) => {
@@ -183,7 +137,6 @@ export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
   );
 }
 
-// includes error handling, type info gets lost at helper function calls
 async function resolveIPCResponse<TRouter extends AnyRouter>(
   opts: IPCRequestOptions
 ): Promise<IPCResponse> {
@@ -275,9 +228,6 @@ async function resolveIPCResponse<TRouter extends AnyRouter>(
     return getEndResponse(resultEnvelope);
   } catch (cause) {
     const { input, path } = opts;
-    // we get here if
-    // - `createContext()` throws
-    // - input deserialization fails
     const error = getTRPCErrorFromUnknown(cause);
     const resultEnvelope = getResultEnvelope({ input, path, error });
 
@@ -285,27 +235,14 @@ async function resolveIPCResponse<TRouter extends AnyRouter>(
   }
 }
 
-// functional happy path, types get inferred
-// async function resolveIPCResponse<TRouter extends AnyRouter>(
-//   opts: IPCRequestOptions
-// ): Promise<IPCResponse> {
-//   const { path, type, input } = opts;
-//   const { transformer, procedures } = appRouter._def;
-//   const ctx = await createContext();
-//   const rawInput = transformer.input.deserialize(input);
-//   const output = await callProcedure({
-//     ctx,
-//     path,
-//     procedures,
-//     rawInput,
-//     type,
-//   });
-//   const resultEnvelope = { result: { data: output } };
-//   return {
-//     response: transformTRPCResponseItem(appRouter, resultEnvelope),
-//   };
-// }
-
 app.on("ready", () => {
   createIPCHandler({ ipcMain });
+
+  ipcMain.handle(
+    "test",
+    (event: Electron.IpcMainInvokeEvent, opts: IPCRequestOptions) => {
+      console.error("handle testtesttest");
+      return launchPlaywright();
+    }
+  );
 });
