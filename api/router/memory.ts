@@ -10,7 +10,7 @@ import { z } from "zod";
 
 export const cacheMap = new Map<string, supportType>();
 
-export const Memory_Enum = ["is_login"] as const;
+export const Memory_Enum = ["is_login", "username", "token"] as const;
 
 export const memoryRouter = t.router({
   getMemory: t.procedure

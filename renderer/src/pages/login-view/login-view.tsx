@@ -26,10 +26,11 @@ const LoginView: React.FC = () => {
       .then((res) => {
         memoryMutation.mutate({ key: "userInfo", value: res });
         memoryMutation.mutate({ key: "is_login", value: "true" });
+        memoryMutation.mutate({ key: "username", value: usernameParam });
         res.token && memoryMutation.mutate({key: "token", value: res.token})
         setInterval(() => {
           // 开启心跳包
-          heartBeatMutation.mutate({username: usernameParam})
+          heartBeatMutation.mutate()
         }, 15000)
 
         navigate("account");
