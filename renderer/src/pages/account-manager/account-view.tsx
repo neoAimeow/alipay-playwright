@@ -7,13 +7,22 @@ import { PlusOutlined, PlaySquareOutlined } from "@ant-design/icons";
 // import promiseIpc from "electron-promise-ipc";
 
 import { trpc } from "../../../../utils/trpc";
+import { useNavigate } from "react-router-dom";
 
 const AccountView: React.FC = () => {
+  const navigate = useNavigate();
   const validAccounts = trpc.account.getValidAccount.useQuery();
   const invalidAccounts = trpc.account.getInvalidAccount.useQuery();
   // const store =
   const mutation = trpc.store.setStore.useMutation();
   const getAccount = trpc.store.getStore.useQuery({ key: "aaa" });
+  const isLoginQuery = trpc.memory.getMemory.useQuery({ key: "is_login"});
+
+  useEffect(()=> {
+    if (!isLoginQuery.data ) {
+      navigate("login");
+    }
+  }, [isLoginQuery.data])
 
   return (
     <div className="card">

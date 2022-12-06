@@ -31,4 +31,7 @@ model Cache {
   id    Int    @id @default(autoincrement())
   key   String
   value String
+
+  // 乐观锁
+  version Int @default(0)
 }

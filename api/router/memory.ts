@@ -8,15 +8,15 @@ type supportType =
 import { t } from "../context";
 import { z } from "zod";
 
-const map = new Map<string, supportType>();
+export const cacheMap = new Map<string, supportType>();
 
-export const Memory_Enum = ["Salmon", "Tuna", "Trout"] as const;
+export const Memory_Enum = ["is_login"] as const;
 
 export const memoryRouter = t.router({
   getMemory: t.procedure
     .input(z.object({ key: z.enum(Memory_Enum) }))
     .query(({ input }) => {
-      return map.get(input.key);
+      return cacheMap.get(input.key);
     }),
   setMemory: t.procedure
     .input(
@@ -26,13 +26,13 @@ export const memoryRouter = t.router({
       })
     )
     .mutation(({ input }) => {
-      map.set(input.key, input.value);
+      cacheMap.set(input.key, input.value);
       return true;
     }),
   deleteMemory: t.procedure
     .input(z.object({ key: z.string() }))
     .mutation(({ input }) => {
-      map.delete(input.key);
+      cacheMap.delete(input.key);
       return true;
     }),
 });

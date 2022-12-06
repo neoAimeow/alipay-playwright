@@ -35,18 +35,37 @@ export const userRouter = t.router({
 
   // 心跳
   heartBeat: t.procedure
-    .input(z.object({ username: z.string(), status: z.string() }))
-    .mutation(({ input }) => {
+    .input(z.object({ username: z.string() }))
+    .mutation(async ({ input }) => {
       const form = new FormData();
       form.append("func", "alipayStatus");
       form.append("user", input.username);
       form.append(
         "params",
         JSON.stringify({
-          status: input.status,
+          status: 1,
         })
       );
 
-      return request.post("", form);
+      await request.post("", form)
+      return true ;
     }),
+
+  // 心跳
+  heartBeatDown: t.procedure
+    .input(z.object({ username: z.string() }))
+    .mutation(async ({ input }) => {
+      const form = new FormData();
+      form.append("func", "alipayStatus");
+      form.append("user", input.username);
+      form.append(
+        "params",
+        JSON.stringify({
+          status: 0,
+        })
+      );
+      await request.post("", form);
+      return true;
+    }),
+
 });

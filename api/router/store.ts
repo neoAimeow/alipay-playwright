@@ -25,6 +25,9 @@ export const storeRouter = t.router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (!input.key || !input.value) {
+        return;
+      }
       const insertStr: string = JSON.stringify({
         obj: input.value as supportType,
       });
@@ -34,9 +37,17 @@ export const storeRouter = t.router({
       });
 
       if (data) {
-        await ctx.prisma.cache.update({
-          data: { value: insertStr },
-          where: { id: data.id },
+        await ctx.prisma.cache.updateMany({
+          data: {
+            value: insertStr,
+            version: {
+              increment: 1,
+            },
+          },
+          where: {
+            id: data.id,
+            version: data.version,
+          },
         });
       } else {
         await ctx.prisma.cache.create({

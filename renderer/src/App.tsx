@@ -18,6 +18,8 @@ import HomeView from "./pages/home-page/home-view";
 import AccountView from "./pages/account-manager/account-view";
 import LogView from "./pages/log-view/log-view";
 import LoginView from "./pages/login-view/login-view";
+import ConfigView from "./pages/config-view/config-view";
+import OrderListView from "./pages/order/order-list-view";
 
 export const switchUrl = "http://rlaecyw7w.bkt.clouddn.com/switch.json";
 
@@ -106,6 +108,9 @@ function App() {
               {/* <Route index element={<Dashboard />} /> */}
               <Route path="/account" element={<AccountView />} />
               {/*<Route index element={<AccountView />} />*/}
+              <Route path="/log" element={<LogView />} />
+              <Route path="/config" element={<ConfigView />} />
+              <Route path="/order-list" element={<OrderListView />} />
               <Route path="/log" element={<LogView />} />
               <Route path="/login" element={<LoginView />} />
               <Route index element={<LoginView />} />

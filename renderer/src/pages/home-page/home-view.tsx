@@ -5,6 +5,7 @@ import type { MenuProps } from "antd";
 import { Layout, Menu } from "antd";
 import "./style.css";
 import { Outlet, useNavigate } from "react-router-dom";
+import { trpc } from "../../../../utils/trpc";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -16,6 +17,7 @@ const items: MenuProps["items"] = [
 ];
 const HomeView: React.FC = () => {
   const navigate = useNavigate();
+  // const heartDownMutation = trpc.user.heartBeatDown.useMutation();
 
   const onClick: MenuProps["onClick"] = (e) => {
     console.log("click ", e);
@@ -24,7 +26,13 @@ const HomeView: React.FC = () => {
         navigate("account");
         break;
       case "2":
+        navigate("order-list");
+        break;
+      case "3":
         navigate("log");
+        break;
+      case "4":
+        navigate("config");
         break;
     }
   };
@@ -69,7 +77,7 @@ const HomeView: React.FC = () => {
             <Outlet />
           </Content>
           <Footer style={{ textAlign: "center" }}>
-            Ant Design ©2018 Created by Ant UED
+            {/*Ant Design ©2018 Created by Ant UED*/}
           </Footer>
         </Layout>
       </Layout>
