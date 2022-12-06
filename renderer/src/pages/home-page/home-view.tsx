@@ -5,11 +5,14 @@ import type { MenuProps } from "antd";
 import { Layout, Menu } from "antd";
 import "./style.css";
 import { Outlet, useNavigate } from "react-router-dom";
+
 const { Header, Content, Footer, Sider } = Layout;
 
 const items: MenuProps["items"] = [
   { key: "1", icon: React.createElement(UserOutlined), label: "帐号管理" },
-  { key: "2", icon: React.createElement(UserOutlined), label: "运行日志" },
+  { key: "2", icon: React.createElement(UserOutlined), label: "订单状态" },
+  { key: "3", icon: React.createElement(UserOutlined), label: "运行日志" },
+  { key: "4", icon: React.createElement(UserOutlined), label: "设置" },
 ];
 const HomeView: React.FC = () => {
   const navigate = useNavigate();

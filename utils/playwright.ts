@@ -1,7 +1,7 @@
 import { webkit, chromium, Browser, Page, devices } from "playwright";
 
 export const launchPlaywright = async () => {
-  const browser = await webkit.launch();
+  const browser = await chromium.launch({headless: false});
   const context = await browser.newContext(devices["iPhone 13"]);
 
   const page = await context.newPage();

@@ -10,3 +10,4 @@ db.sqlite
 /test-results/
 /playwright-report/
 /playwright/.cache/
+.idea
