@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Button, Card, Checkbox, Form, Input } from "antd";
+import { Button, Card, Checkbox, Form, Input, Modal } from "antd";
 import { trpc } from "../../../../utils/trpc";
+import { TRPCError } from "@trpc/server";
+import { UserInfo } from "../../../../api/types/user";
 
 const LoginView: React.FC = () => {
   // const validAccounts = trpc.account.getValidAccount.useQuery();
@@ -8,15 +10,19 @@ const LoginView: React.FC = () => {
   const tContext = trpc.useContext();
 
   const onFinish = async (values: Record<string, string | boolean>) => {
-    // console.error(222, validAccounts.data);
     const { username, password, remember, autologin } = values;
-    // loginQuery
     if (username && password) {
-      const result = await tContext.user.login.fetch({
-        username: username as string,
-        password: password as string,
-      });
-      console.log("onFinish:", result);
+      try {
+        const result: UserInfo = await tContext.user.login.fetch({
+          username: username as string,
+          password: password as string,
+        });
+      } catch (ex) {
+        Modal.error({
+          title: "登录失败",
+          content: (ex as TRPCError).message,
+        });
+      }
     }
   };
 

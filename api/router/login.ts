@@ -2,6 +2,9 @@ import { t } from "../context";
 import { z } from "zod";
 import request from "../../utils/axios";
 import FormData from "form-data";
+import { BaseResult } from "../types/common";
+import { UserInfo } from "../types/user";
+import { TRPCError } from "@trpc/server";
 
 export const userRouter = t.router({
   login: t.procedure
@@ -19,9 +22,15 @@ export const userRouter = t.router({
         })
       );
 
-      const data = await request.post("", form);
-      console.error("login", data.data);
-      return data.data as Record<string, unknown>;
+      const result = await request.post<BaseResult<UserInfo>>("", form);
+      const { code, data, message } = result.data;
+      if (code != 0) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: message,
+        });
+      }
+      return data;
     }),
 
   // 心跳
