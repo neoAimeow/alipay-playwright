@@ -4,6 +4,7 @@ import { orderRecordRouter } from "./order-record";
 import { storeRouter } from "./store";
 import { userRouter } from "./login";
 import { orderRouter } from "./order";
+import { memoryRouter } from "./memory";
 
 export const appRouter = t.router({
   account: accountRouter,
@@ -11,6 +12,7 @@ export const appRouter = t.router({
   store: storeRouter,
   user: userRouter,
   order: orderRouter,
+  memory: memoryRouter,
 });
 
 export type AppRouter = typeof appRouter;

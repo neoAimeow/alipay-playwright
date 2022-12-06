@@ -5,9 +5,11 @@ export const accountRouter = t.router({
   getValidAccount: t.procedure.query(({ ctx }) => {
     return ctx.prisma.account.findMany({ where: { valid: true } });
   }),
+
   getInvalidAccount: t.procedure.query(({ ctx }) => {
     return ctx.prisma.account.findMany({ where: { valid: false } });
   }),
+
   add: t.procedure
     .input(
       z.object({
@@ -27,6 +29,7 @@ export const accountRouter = t.router({
         },
       });
     }),
+  
   remove: t.procedure
     .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => {

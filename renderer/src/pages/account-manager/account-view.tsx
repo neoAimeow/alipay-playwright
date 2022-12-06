@@ -15,7 +15,6 @@ const AccountView: React.FC = () => {
   const mutation = trpc.store.setStore.useMutation();
   const getAccount = trpc.store.getStore.useQuery({ key: "aaa" });
 
-  useEffect(() => {}, []);
   return (
     <div className="card">
       <Card title="帐号管理" bordered={false} style={{ width: "100%" }}>
@@ -50,6 +49,11 @@ const AccountView: React.FC = () => {
           style={{ marginTop: "20px" }}
         >
           <Column title="帐号" dataIndex="id" key="id" />
+          <Column
+            title="是否为企业帐号"
+            dataIndex="isEnterprise"
+            key="isEnterprise"
+          />
           <Column title="是否已登录" dataIndex="name" key="name" />
           <Column title="工作状态" dataIndex="name" key="name" />
           {/* <Column

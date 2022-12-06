@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from "electron";
 import { join } from "path";
 import { URL } from "url";
+import * as electron from "electron";
 
 export const pageUrl =
   import.meta.env.DEV && import.meta.env.VITE_DEV_SERVER_URL !== undefined
@@ -8,8 +9,14 @@ export const pageUrl =
     : new URL("../renderer/dist/index.html", "file://" + __dirname).toString();
 
 async function createWindow() {
+  const winW = electron.screen.getPrimaryDisplay().workAreaSize.width - 50;
+
+  const winH = electron.screen.getPrimaryDisplay().workAreaSize.height - 50;
+
   const browserWindow = new BrowserWindow({
     show: false,
+    height: winH,
+    width: winW,
     webPreferences: {
       allowRunningInsecureContent: false,
       enableBlinkFeatures: "",

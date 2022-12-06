@@ -17,6 +17,7 @@ model Account {
   isShort  Boolean       @default(true)
   valid    Boolean       @default(true)
   orders   OrderRecord[]
+  isEnterprise Boolean @default(false)
 }
 
 model OrderRecord {
