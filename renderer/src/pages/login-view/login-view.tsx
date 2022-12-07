@@ -1,16 +1,20 @@
-import React, {  useEffect } from "react";
+import React, { useEffect } from "react";
 import { Button, Card, Checkbox, Form, Input, Modal } from "antd";
 import { trpc } from "../../../../utils/trpc";
 import { TRPCError } from "@trpc/server";
-import { useNavigate } from "react-router-dom";
 
-const LoginView: React.FC = () => {
-  const navigate = useNavigate();
+interface LoginViewProps {
+  isLoginCallBack: () => void;
+}
+
+const LoginView = (props: LoginViewProps) => {
+  const { isLoginCallBack } = props;
+  const heartDownMutation = trpc.user.heartBeatDown.useMutation();
 
   const userContext = trpc.useContext().user;
 
-  const userNameQuery = trpc.store.getStore.useQuery({ key: "username"});
-  const passwordQuery = trpc.store.getStore.useQuery({ key: "password"});
+  const userNameQuery = trpc.store.getStore.useQuery({ key: "username" });
+  const passwordQuery = trpc.store.getStore.useQuery({ key: "password" });
   const autoLoginQuery = trpc.store.getStore.useQuery({ key: "autoLogin" });
 
   const storeMutation = trpc.store.setStore.useMutation();
@@ -18,6 +22,8 @@ const LoginView: React.FC = () => {
   const heartBeatMutation = trpc.user.heartBeat.useMutation();
 
   const loginFunc = (usernameParam: string, passwordParam: string) => {
+    heartDownMutation.mutate();
+    
     userContext.login
       .fetch({
         username: usernameParam,
@@ -27,13 +33,13 @@ const LoginView: React.FC = () => {
         memoryMutation.mutate({ key: "userInfo", value: res });
         memoryMutation.mutate({ key: "is_login", value: "true" });
         memoryMutation.mutate({ key: "username", value: usernameParam });
-        res.token && memoryMutation.mutate({key: "token", value: res.token})
+        res.token && memoryMutation.mutate({ key: "token", value: res.token });
         setInterval(() => {
           // 开启心跳包
-          heartBeatMutation.mutate()
-        }, 15000)
+          heartBeatMutation.mutate();
+        }, 15000);
 
-        navigate("account");
+        isLoginCallBack();
       })
       .catch((ex) => {
         Modal.error({
@@ -101,9 +107,7 @@ const LoginView: React.FC = () => {
             <Checkbox>自动登录</Checkbox>
           </Form.Item>
 
-          <Form.Item
-            wrapperCol={{ offset: 1, span: 22 }}
-          >
+          <Form.Item wrapperCol={{ offset: 1, span: 22 }}>
             <Button
               type="primary"
               htmlType="submit"

@@ -16,7 +16,7 @@ export const accountRouter = t.router({
         account: z.string(),
         password: z.string(),
         isShort: z.boolean(),
-        valid: z.boolean(),
+        isEnterprise: z.boolean(),
       })
     )
     .mutation(({ ctx, input }) => {
@@ -25,11 +25,12 @@ export const accountRouter = t.router({
           account: input.account,
           password: input.password,
           isShort: input.isShort,
-          valid: input.valid,
+          isEnterprise: input.isEnterprise,
+          valid: true,
         },
       });
     }),
-  
+
   remove: t.procedure
     .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => {

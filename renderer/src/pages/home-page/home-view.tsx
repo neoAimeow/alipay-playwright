@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import logo from "../../assets/logo.png";
 import { UserOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
 import { Layout, Menu } from "antd";
 import "./style.css";
 import { Outlet, useNavigate } from "react-router-dom";
+import LoginView from "../login-view/login-view";
 import { trpc } from "../../../../utils/trpc";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -17,7 +18,9 @@ const items: MenuProps["items"] = [
 ];
 const HomeView: React.FC = () => {
   const navigate = useNavigate();
-  // const heartDownMutation = trpc.user.heartBeatDown.useMutation();
+  const [isLogin, setIsLogin] = useState<boolean>(false);
+
+  const heartDownMutation = trpc.user.heartBeatDown.useMutation();
 
   const onClick: MenuProps["onClick"] = (e) => {
     console.log("click ", e);
@@ -36,7 +39,7 @@ const HomeView: React.FC = () => {
         break;
     }
   };
-  return (
+  return isLogin ? (
     <div className="home-view">
       <Layout hasSider>
         <Sider
@@ -82,6 +85,12 @@ const HomeView: React.FC = () => {
         </Layout>
       </Layout>
     </div>
+  ) : (
+    <LoginView
+      isLoginCallBack={() => {
+        setIsLogin(true);
+      }}
+    />
   );
 };
 
