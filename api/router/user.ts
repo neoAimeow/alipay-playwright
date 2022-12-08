@@ -58,7 +58,8 @@ export const userRouter = t.router({
     .mutation(async () => {
       const form = new FormData();
       form.append("func", "alipayStatus");
-      form.append("user", cacheMap.get("username") ?? "");
+      // form.append("user", cacheMap.get("username") ?? "");
+      form.append("user", "test1");
       form.append(
         "params",
         JSON.stringify({

@@ -1,21 +1,12 @@
-type supportType = string | number | boolean | Record<string, unknown>;
-
 import { t } from "../context";
 import { z } from "zod";
+import { CacheManager } from "../../utils/cache";
 
 export const storeRouter = t.router({
   getStore: t.procedure
     .input(z.object({ key: z.string() }))
     .query(async ({ ctx, input }) => {
-      const cache = await ctx.prisma.cache.findFirst({
-        where: { key: input.key },
-      });
-      if (cache) {
-        const data = JSON.parse(cache.value) as { obj: supportType };
-        return data.obj;
-      } else {
-        return null;
-      }
+      return CacheManager.getInstance(ctx.prisma).getStore(input.key);
     }),
   setStore: t.procedure
     .input(
@@ -25,49 +16,15 @@ export const storeRouter = t.router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      if (!input.key || !input.value) {
-        return;
-      }
-      const insertStr: string = JSON.stringify({
-        obj: input.value as supportType,
-      });
-
-      const data = await ctx.prisma.cache.findFirst({
-        where: { key: input.key },
-      });
-
-      if (data) {
-        await ctx.prisma.cache.updateMany({
-          data: {
-            value: insertStr,
-            version: {
-              increment: 1,
-            },
-          },
-          where: {
-            id: data.id,
-            version: data.version,
-          },
-        });
-      } else {
-        await ctx.prisma.cache.create({
-          data: { key: input.key, value: insertStr },
-        });
-      }
-      return true;
+      return CacheManager.getInstance(ctx.prisma).setStore(
+        input.key,
+        input.value
+      );
     }),
+
   delete: t.procedure
     .input(z.object({ key: z.string() }))
     .mutation(async ({ input, ctx }) => {
-      const data = await ctx.prisma.cache.findFirst({
-        where: { key: input.key },
-      });
-      if (data) {
-        await ctx.prisma.cache.delete({
-          where: { id: data.id },
-        });
-      }
-
-      return true;
+      return CacheManager.getInstance(ctx.prisma).delete(input.key);
     }),
 });

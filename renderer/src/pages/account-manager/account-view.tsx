@@ -10,9 +10,8 @@ import {
 } from "@ant-design/icons";
 // import promiseIpc from "electron-promise-ipc";
 
-import { trpc } from "../../../../utils/trpc";
+import { trpc, trpcClient } from "../../../../utils/trpc";
 import { useNavigate } from "react-router-dom";
-import { record } from "zod";
 
 interface CreateAccountRef {
   account?: string;
@@ -121,7 +120,12 @@ const AccountView: React.FC = () => {
             shape="round"
             icon={<PlusOutlined />}
             size="large"
-            onClick={() => {}}
+            onClick={() => {
+              // const data = await trpcClient.account.getValidAccount.query();
+              // console.error(1111, data);
+              window.launchPlaywright();
+              // ipcRenderer.send("launchPlaywright");
+            }}
           >
             批量添加
           </Button>
@@ -147,12 +151,23 @@ const AccountView: React.FC = () => {
           <Column
             title="是否为企业帐号"
             dataIndex="isEnterprise"
+            width={150}
             key="isEnterprise"
             render={(record) => <div>{record}</div>}
           />
-          <Column title="是否为长密码" dataIndex="isShort" key="isShort" />
-          <Column title="是否已登录" dataIndex="isAlipayLogin" key="name" />
-          <Column title="工作状态" dataIndex="state" key="name" />
+          <Column
+            title="是否短密码"
+            dataIndex="isShort"
+            key="isShort"
+            width={120}
+          />
+          <Column
+            title="是否已登录"
+            dataIndex="isAlipayLogin"
+            key="name"
+            width={120}
+          />
+          <Column title="工作状态" dataIndex="state" key="name" width={120} />
           <Column title="操作" dataIndex="state" key="name" />
         </Table>
       </Card>

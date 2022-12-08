@@ -12,7 +12,7 @@ import type { TRPCResponse, TRPCResponseMessage } from "@trpc/server/rpc";
 import { createContext } from "../api/context";
 import { appRouter } from "../api/router";
 import type { IPCRequestOptions, IPCResponse } from "../types";
-import { launchPlaywright } from "../utils/playwright";
+import { AlipayPlayWright } from "../playwright/alipay";
 
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
@@ -239,10 +239,12 @@ app.on("ready", () => {
   createIPCHandler({ ipcMain });
 
   ipcMain.handle(
-    "test",
-    (event: Electron.IpcMainInvokeEvent, opts: IPCRequestOptions) => {
+    "launchPlaywright",
+    async (event: Electron.IpcMainInvokeEvent, opts: IPCRequestOptions) => {
       console.error("handle testtesttest");
-      return launchPlaywright();
+      const playwright = AlipayPlayWright.getInstance()
+      await playwright.login();
+      // return launchPlaywright();
     }
   );
 });

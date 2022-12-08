@@ -1,12 +1,6 @@
-type supportType =
-  | string
-  | number
-  | boolean
-  | Record<string, unknown>
-  | unknown;
-
 import { t } from "../context";
 import { z } from "zod";
+import { supportType } from "../../utils/cache";
 
 export const cacheMap = new Map<string, supportType>();
 

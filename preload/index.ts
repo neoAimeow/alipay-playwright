@@ -2,10 +2,10 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { IpcRenderer, ContextBridge } from "electron";
 import type { IPCRequestOptions } from "../types";
 
-type exposeType = {
+interface exposeType {
   contextBridge: ContextBridge;
   ipcRenderer: IpcRenderer;
-};
+}
 
 export const exposeElectronTRPC = ({
   contextBridge,
@@ -16,13 +16,20 @@ export const exposeElectronTRPC = ({
   });
 };
 
-process.once("loaded", () => {
-  exposeElectronTRPC({ contextBridge, ipcRenderer });
-  contextBridge.exposeInMainWorld("playwrightPlay", () => {
+export const exposePlaywright = ({
+  contextBridge,
+  ipcRenderer,
+}: exposeType) => {
+  return contextBridge.exposeInMainWorld("launchPlaywright", () => {
     console.error("1111test");
     ipcRenderer
-      .invoke("test")
+      .invoke("launchPlaywright")
       .then((res) => {})
       .catch((ex) => {});
   });
+};
+
+process.once("loaded", () => {
+  exposePlaywright({ contextBridge, ipcRenderer });
+  exposeElectronTRPC({ contextBridge, ipcRenderer });
 });

@@ -6,16 +6,14 @@ import FormData from "form-data";
 
 export const orderRouter = t.router({
   // 获取订单信息
-  getOrder: t.procedure
-    .query(async () => {
-      const form = new FormData();
-      form.append("func", "queryOrdersToPay");
-      form.append("user", cacheMap.get("username") ?? "");
-      form.append("token", cacheMap.get("token") ?? "")
-      form.append("params","{}");
-      const orderList = await request.post("", form)
-      return orderList;
-    }),
+  getOrder: t.procedure.query(async () => {
+    const form = new FormData();
+    form.append("func", "queryOrdersToPay");
+    form.append("user", cacheMap.get("username") ?? "");
+    form.append("token", cacheMap.get("token") ?? "");
+    form.append("params", "{}");
+    return await request.post("", form);
+  }),
 
   // 上报支付结果
   uploadPayResult: t.procedure
@@ -31,13 +29,16 @@ export const orderRouter = t.router({
       const form = new FormData();
       form.append("func", "payResult");
       form.append("user", cacheMap.get("username") ?? "");
-      form.append("token", cacheMap.get("token") ?? "")
-      form.append("params",JSON.stringify({
-        alipay: input.alipay,
-        orderId: input.orderId,
-        errorCode: input.errorCode,
-        errorMsg: input.errorMsg,
-      }));
+      form.append("token", cacheMap.get("token") ?? "");
+      form.append(
+        "params",
+        JSON.stringify({
+          alipay: input.alipay,
+          orderId: input.orderId,
+          errorCode: input.errorCode,
+          errorMsg: input.errorMsg,
+        })
+      );
       await request.post("", form);
       return true;
     }),
