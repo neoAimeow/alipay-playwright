@@ -18,7 +18,7 @@ const items: MenuProps["items"] = [
 ];
 const HomeView: React.FC = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState<boolean>(false);
+  const [isLogin, setIsLogin] = useState<boolean>(true);
 
   const heartDownMutation = trpc.user.heartBeatDown.useMutation();
 

@@ -26,7 +26,8 @@ export class AlipayPlayWright {
   private static instance: AlipayPlayWright | undefined;
   private cacheManager: CacheManager = CacheManager.getInstance(prisma);
 
-  private constructor() {}
+  private constructor() {
+  }
 
   public static getInstance(): AlipayPlayWright {
     if (!AlipayPlayWright.instance) {
@@ -54,17 +55,60 @@ export class AlipayPlayWright {
   }
 
   public async login(): Promise<void> {
+    const account = await this.loadUsers();
     const browser = await this.launchPlaywright();
-    const context = await browser.newContext(devices["iPhone 13"]);
 
-    const page = await context.newPage();
+    account.map(async (item) => {
+      const username = item.account
+      const password = item.password
+      const isShort = item.isShort
+      const context = await browser.newContext(devices["iPhone 13"]);
+      const page = await context.newPage();
+      await page.goto(loginUrl);
+      await page.locator(".h5RouteAppSenior__h5pay").click();
+      await page.locator('.adm-input-element').fill(username);
+      await page.locator("button:has-text('下一步')").click();
 
-    await page.goto(loginUrl);
-    const str = await page.title();
-    console.error(str);
+      await page.waitForEvent("requestfinished");
+      await page.waitForLoadState("domcontentloaded");
+      await page.waitForTimeout(1000);
 
-    await context.close();
-    await browser.close();
+      const content = await page.content();
+      if (content.match("账号不存在")) {
+        await this.invalidUser(username);
+        return;
+      } else if (content.match("输入短信验证码")) {
+        await page.locator(".toAccountLoginWrap___2ir3r").click();
+        await page.waitForTimeout(1000);
+
+        await page.locator('.my-passcode-input-native-input').fill(password);
+
+        await page.locator(".adm-button-large").click();
+
+        await page.waitForTimeout(1000);
+        const finalStepContent = await page.content();
+
+        if (finalStepContent.match("支付密码不正确")) {
+          await this.invalidUser(username);
+        } else {
+          // save cookie
+          const cookies = await context.cookies()
+          await this.saveCookies(username, cookies)
+        }
+      } else {
+        if (isShort) {
+          await page.locator('.my-passcode-input-native-input').fill(password);
+        } else {
+          console.error("isNotShort", password)
+          await page.locator('.adm-input-element >> nth=1').fill(password);
+        }
+
+        await page.locator("button:has-text('下一步')").click();
+        // save cookie
+        const cookies = await context.cookies()
+        await this.saveCookies(username, cookies)
+      }
+    });
   }
 
   // 加载可用帐号
@@ -94,7 +138,7 @@ export class AlipayPlayWright {
     }
   }
 
-  private async saveCookies(account: string, cookies: string): Promise<void> {
+  private async saveCookies(account: string, cookies: Cookie[]): Promise<void> {
     await this.cacheManager.setStore(
       cookie_pre + account,
       JSON.stringify(cookies, null, 2)
