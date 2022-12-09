@@ -1,14 +1,14 @@
 import { t } from "../context";
 import { z } from "zod";
-import { Mapper } from "../../mapper/mapper";
+import { AccountMapper } from "../../mapper/mapper";
 
 export const accountRouter = t.router({
   getValidAccount: t.procedure.query(({ ctx }) => {
-    return Mapper.getInstance(ctx.prisma).getValidAccount();
+    return AccountMapper.getInstance(ctx.prisma).getValidAccount();
   }),
 
   getInvalidAccount: t.procedure.query(({ ctx }) => {
-    return Mapper.getInstance(ctx.prisma).getInvalidAccount();
+    return AccountMapper.getInstance(ctx.prisma).getInvalidAccount();
   }),
 
   add: t.procedure
@@ -21,7 +21,7 @@ export const accountRouter = t.router({
       })
     )
     .mutation(({ ctx, input }) => {
-      return Mapper.getInstance(ctx.prisma).add(
+      return AccountMapper.getInstance(ctx.prisma).add(
         input.account,
         input.password,
         input.isShort,
@@ -32,6 +32,6 @@ export const accountRouter = t.router({
   remove: t.procedure
     .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => {
-      return Mapper.getInstance(ctx.prisma).remove(input.id);
+      return AccountMapper.getInstance(ctx.prisma).remove(input.id);
     }),
 });

@@ -37,3 +37,10 @@ model Cache {
   // 乐观锁
   version Int @default(0)
 }
+
+
+model Log {
+  id    Int    @id @default(autoincrement())
+  level String
+  message String
+}
