@@ -1,4 +1,10 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { Button, Card, Space, Table, Input, Modal, Checkbox } from "antd";
 import Column from "antd/es/table/Column";
 import {
@@ -66,128 +72,224 @@ const createAccountModal = (param: {
 
 const AccountView: React.FC = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
+  const [invalidAccounts, setInvalidAccounts] = useState<AccountInfo[]>([]);
   const inputValueRef = useRef<CreateAccountRef>({});
 
   const context = trpc.useContext();
 
   const accountAddMutation = trpc.account.add.useMutation();
-  const accountLoginMutation = trpc.account.loginAccount.useMutation();
-  const mutation = trpc.store.setStore.useMutation();
+  const accountInvalidAccountMutation =
+    trpc.account.invalidAccount.useMutation();
+  const accountValidAccountMutation = trpc.account.validAccount.useMutation();
 
   useLayoutEffect(() => {
+    reloadData();
+  }, []);
+
+  const reloadData = useCallback(() => {
     const fetchData = async () => {
       const validAccount = await context.account.getValidAccount.fetch();
       setAccounts(validAccount);
+
+      const invalidAccount = await context.account.getInvalidAccount.fetch();
+      setInvalidAccounts(invalidAccount);
     };
     fetchData().catch((ex) => {
       console.error(ex);
     });
-  }, []);
+  }, [context.account.getInvalidAccount, context.account.getValidAccount]);
 
   return (
     <div className="card">
-      <Card title="帐号管理" bordered={false} style={{ width: "100%" }}>
-        <Space>
-          <Button
-            type="primary"
-            shape="round"
-            icon={<PlusOutlined />}
-            size="large"
-            onClick={() => {
-              createAccountModal({
-                ref: inputValueRef,
-                onOk: (ref: CreateAccountRef) => {
-                  const {
-                    account,
-                    password,
-                    isShort = false,
-                    isEnterprise = false,
-                  } = ref;
-                  if (
-                    !account ||
-                    account == "" ||
-                    password == "" ||
-                    !password
-                  ) {
-                    return;
-                  }
-                  accountAddMutation.mutate({
-                    account: account,
-                    password: password,
-                    isShort: isShort,
-                    isEnterprise: isEnterprise,
-                  });
-                },
-              });
-            }}
-          >
-            添加帐号
-          </Button>
+      <Space direction="vertical" size="middle" style={{ display: "flex" }}>
+        <Card title="帐号管理" bordered={false} style={{ width: "100%" }}>
+          <Space>
+            <Button
+              type="primary"
+              shape="round"
+              icon={<PlusOutlined />}
+              size="large"
+              onClick={() => {
+                createAccountModal({
+                  ref: inputValueRef,
+                  onOk: (ref: CreateAccountRef) => {
+                    const {
+                      account,
+                      password,
+                      isShort = false,
+                      isEnterprise = false,
+                    } = ref;
+                    if (
+                      !account ||
+                      account == "" ||
+                      password == "" ||
+                      !password
+                    ) {
+                      return;
+                    }
+                    accountAddMutation.mutate({
+                      account: account,
+                      password: password,
+                      isShort: isShort,
+                      isEnterprise: isEnterprise,
+                    });
+                  },
+                });
+              }}
+            >
+              添加帐号
+            </Button>
 
-          <Button
-            type="primary"
-            shape="round"
-            icon={<PlusOutlined />}
-            size="large"
-            onClick={() => {
-              // const data = await trpcClient.account.getValidAccount.query();
-              // console.error(1111, data);
-              window.playwright.login();
-              // ipcRenderer.send("launchPlaywright");
-            }}
-          >
-            批量添加
-          </Button>
+            <Button
+              type="primary"
+              shape="round"
+              icon={<PlusOutlined />}
+              size="large"
+              onClick={() => {
+                // const data = await trpcClient.account.getValidAccount.query();
+                // console.error(1111, data);
+                window.playwright.login();
+                // ipcRenderer.send("launchPlaywright");
+              }}
+            >
+              批量添加
+            </Button>
 
-          <Button
-            type="primary"
-            shape="round"
-            icon={<PlaySquareOutlined />}
-            size="large"
-            onClick={async () => {
-              // window.playwright.login();
-              // accountLoginMutation.mutate({account:"2547960062@qq.com"})
-              // const list = await context.account.getValidAccount.fetch();
-              // setAccounts(list)
-            }}
-          >
-            启动
-          </Button>
-        </Space>
+            <Button
+              type="primary"
+              shape="round"
+              icon={<PlaySquareOutlined />}
+              size="large"
+              onClick={async () => {
+                // window.playwright.login();
+                // accountLoginMutation.mutate({account:"2547960062@qq.com"})
+                // const list = await context.account.getValidAccount.fetch();
+                // setAccounts(list)
+              }}
+            >
+              启动
+            </Button>
+          </Space>
 
-        <Table
-          key="id"
-          dataSource={accounts}
-          rowKey={(record: { id: number }) => `${record.id}`}
-          style={{ marginTop: "20px" }}
-        >
-          <Column title="id" dataIndex="id" key="id" width={50} />
-          <Column title="支付宝帐号" dataIndex="account" key="id" width={300} />
-          <Column
-            title="是否为企业帐号"
-            dataIndex="isEnterprise"
-            width={150}
-            key="isEnterprise"
-            render={(record) => <div>{record ? "是" : "否"}</div>}
-          />
-          <Column
-            title="是否短密码"
-            dataIndex="isShort"
-            key="isShort"
-            width={120}
-            render={(record) => <div>{record ? "是" : "否"}</div>}
-          />
-          <Column
-            title="是否已登录"
-            dataIndex="isLogin"
-            key="isLogin"
-            width={120}
-            render={(record) => <div>{record ? "是" : "否"}</div>}
-          />
-          <Column title="工作状态" dataIndex="state" key="name" width={120} />
-          <Column title="操作" dataIndex="state" key="name" />
-        </Table>
-      </Card>
+          <Table
+            key="id"
+            dataSource={accounts}
+            rowKey={(record: { id: number }) => `${record.id}`}
+            style={{ marginTop: "20px" }}
+          >
+            <Column title="id" dataIndex="id" key="id" width={50} />
+            <Column
+              title="支付宝帐号"
+              dataIndex="account"
+              key="id"
+              width={300}
+            />
+            <Column
+              title="是否为企业帐号"
+              dataIndex="isEnterprise"
+              width={150}
+              key="isEnterprise"
+              render={(record) => <div>{record ? "是" : "否"}</div>}
+            />
+            <Column
+              title="是否短密码"
+              dataIndex="isShort"
+              key="isShort"
+              width={120}
+              render={(record) => <div>{record ? "是" : "否"}</div>}
+            />
+            <Column
+              title="是否已登录"
+              dataIndex="isLogin"
+              key="isLogin"
+              width={120}
+              render={(record) => <div>{record ? "是" : "否"}</div>}
+            />
+            <Column title="工作状态" dataIndex="state" key="name" width={120} />
+            <Column
+              title="操作"
+              dataIndex="account"
+              key="account"
+              render={(value) => (
+                <div>
+                  <Button
+                    onClick={() => {
+                      const invalidAccountMutate = async () => {
+                        await accountInvalidAccountMutation.mutateAsync({
+                          account: value as string,
+                        });
+                      };
+                      invalidAccountMutate()
+                        .then(() => {
+                          reloadData();
+                        })
+                        .catch(() => {});
+                    }}
+                  >
+                    设为失效
+                  </Button>
+                </div>
+              )}
+            />
+          </Table>
+        </Card>
+
+        <Card title="失效帐号" bordered={false} style={{ width: "100%" }}>
+          <Table
+            key="id"
+            dataSource={invalidAccounts}
+            rowKey={(record: { id: number }) => `${record.id}`}
+            style={{ marginTop: "20px" }}
+          >
+            <Column title="id" dataIndex="id" key="id" width={50} />
+            <Column
+              title="支付宝帐号"
+              dataIndex="account"
+              key="id"
+              width={300}
+            />
+            <Column
+              title="是否为企业帐号"
+              dataIndex="isEnterprise"
+              width={150}
+              key="isEnterprise"
+              render={(record) => <div>{record ? "是" : "否"}</div>}
+            />
+            <Column
+              title="是否短密码"
+              dataIndex="isShort"
+              key="isShort"
+              width={120}
+              render={(record) => <div>{record ? "是" : "否"}</div>}
+            />
+            <Column
+              title="操作"
+              dataIndex="account"
+              key="account"
+              render={(value) => (
+                <div>
+                  <Button
+                    onClick={() => {
+                      const validAccountMutate = async () => {
+                        await accountValidAccountMutation.mutateAsync({
+                          account: value as string,
+                        });
+                      };
+                      validAccountMutate()
+                        .then(() => {
+                          reloadData();
+                        })
+                        .catch(() => {});
+                    }}
+                  >
+                    恢复正常
+                  </Button>
+                </div>
+              )}
+            />
+          </Table>
+        </Card>
+      </Space>
     </div>
   );
 };

@@ -2,13 +2,15 @@ import { t } from "../context";
 import { z } from "zod";
 import { AccountMapper } from "../../mapper/mapper";
 import { Account } from "@prisma/client";
-import { AccountState, AccountStateManager, WorkState } from "../../utils/account-state-manager";
-
-
+import {
+  AccountState,
+  AccountStateManager,
+  WorkState,
+} from "../../utils/account-state-manager";
 
 export interface AccountInfo extends Account {
-  isLogin?: boolean
-  workState?: WorkState
+  isLogin?: boolean;
+  workState?: WorkState;
 }
 
 export const accountRouter = t.router({
@@ -44,33 +46,51 @@ export const accountRouter = t.router({
       return AccountMapper.getInstance(ctx.prisma).remove(input.id);
     }),
 
-  loginAccount:t.procedure.input(z.object({account:z.string()}))
-  .mutation(({  input }) => {
-    return AccountStateManager.getInstance().loginAccount(input.account)
+  loginAccount: t.procedure
+    .input(z.object({ account: z.string() }))
+    .mutation(({ input }) => {
+      return AccountStateManager.getInstance().loginAccount(input.account);
+    }),
+
+  offsetLoginAccount: t.procedure
+    .input(z.object({ account: z.string() }))
+    .mutation(({ input }) => {
+      return AccountStateManager.getInstance().offsetLoginAccount(
+        input.account
+      );
+    }),
+
+  getLoginUserList: t.procedure.query(() => {
+    return AccountStateManager.getInstance().getLoginUserList();
   }),
 
-  offsetLoginAccount:t.procedure.input(z.object({account:z.string()}))
-    .mutation(({  input }) => {
-      return AccountStateManager.getInstance().offsetLoginAccount(input.account)
+  validAccount: t.procedure
+    .input(z.object({ account: z.string() }))
+    .mutation(({ ctx, input }) => {
+      return AccountMapper.getInstance(ctx.prisma).validUser(input.account);
     }),
 
-  getLoginUserList:t.procedure
-    .query(() => {
-      return AccountStateManager.getInstance().getLoginUserList()
+  invalidAccount: t.procedure
+    .input(z.object({ account: z.string() }))
+    .mutation(({ ctx, input }) => {
+      return AccountMapper.getInstance(ctx.prisma).invalidUser(input.account);
     }),
 
-  accountToWork:t.procedure.input(z.object({account:z.string()}))
-    .mutation(({  input }) => {
-      return AccountStateManager.getInstance().accountToWork(input.account)
+  accountToWork: t.procedure
+    .input(z.object({ account: z.string() }))
+    .mutation(({ input }) => {
+      return AccountStateManager.getInstance().accountToWork(input.account);
     }),
 
-  accountToOnCall:t.procedure.input(z.object({account:z.string()}))
-    .mutation(({  input }) => {
-      return AccountStateManager.getInstance().accountToOnCall(input.account)
+  accountToOnCall: t.procedure
+    .input(z.object({ account: z.string() }))
+    .mutation(({ input }) => {
+      return AccountStateManager.getInstance().accountToOnCall(input.account);
     }),
 
-  accountToError:t.procedure.input(z.object({account:z.string()}))
-    .mutation(({  input }) => {
-      return AccountStateManager.getInstance().accountToError(input.account)
+  accountToError: t.procedure
+    .input(z.object({ account: z.string() }))
+    .mutation(({ input }) => {
+      return AccountStateManager.getInstance().accountToError(input.account);
     }),
 });
