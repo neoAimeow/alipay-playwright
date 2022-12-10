@@ -1,6 +1,6 @@
 import { t } from "../context";
 import { z } from "zod";
-import { AccountMapper } from "../../mapper/mapper";
+import { AccountMapper } from "../../mapper/account-mapper";
 import { Account } from "@prisma/client";
 import {
   AccountState,
