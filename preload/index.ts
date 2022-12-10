@@ -16,32 +16,24 @@ export const exposeElectronTRPC = ({
   });
 };
 
-export const exposePlaywrightLogin = ({
+export const exposePlaywright = ({
   contextBridge,
   ipcRenderer,
 }: exposeType) => {
-  return contextBridge.exposeInMainWorld("playwrightLogin", () => {
-    ipcRenderer
-      .invoke("playwright-login")
-      .then((res) => {})
-      .catch((ex) => {});
+  return contextBridge.exposeInMainWorld("playwright", {
+    test: (link: string) => ipcRenderer.invoke("playwright-test", link),
+    pay: () => ipcRenderer.invoke("playwright-pay"),
+    login: () => ipcRenderer.invoke("playwright-login"),
   });
 };
-
-export const exposePlaywrightPay = ({
-                                        contextBridge,
-                                        ipcRenderer,
-                                      }: exposeType) => {
-  return contextBridge.exposeInMainWorld("playwrightPay", () => {
-    ipcRenderer
-      .invoke("playwright-pay")
-      .then((res) => {})
-      .catch((ex) => {});
-  });
-};
+// export const payIpc = (link: string) => {
+//   ipcRenderer
+//     .invoke("playwright-test", link)
+//     .then((res) => {})
+//     .catch((ex) => {});
+// };
 
 process.once("loaded", () => {
-  exposePlaywrightLogin({ contextBridge, ipcRenderer });
-  exposePlaywrightPay({ contextBridge, ipcRenderer });
   exposeElectronTRPC({ contextBridge, ipcRenderer });
+  exposePlaywright({ contextBridge, ipcRenderer });
 });

@@ -136,18 +136,17 @@ export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
     }
   );
 
+  ipcMain.handle("playwright-login", async () => {
+    await AlipayPlayWright.getInstance().login();
+  });
 
-  ipcMain.handle(
-    "playwright-login", async () => {
-      await AlipayPlayWright.getInstance().login()
-    }
-  );
+  ipcMain.handle("playwright-pay", async () => {
+    await AlipayPlayWright.getInstance().pay();
+  });
 
-  ipcMain.handle(
-    "playwright-pay", async () => {
-      await AlipayPlayWright.getInstance().pay()
-    }
-  );
+  ipcMain.handle("playwright-test", async (event, value: string) => {
+    await AlipayPlayWright.getInstance().test(value);
+  });
 }
 
 async function resolveIPCResponse<TRouter extends AnyRouter>(
@@ -250,5 +249,4 @@ async function resolveIPCResponse<TRouter extends AnyRouter>(
 
 app.on("ready", () => {
   createIPCHandler({ ipcMain });
-
 });
