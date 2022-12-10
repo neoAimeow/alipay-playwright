@@ -1,6 +1,5 @@
-import { contextBridge, ipcRenderer } from "electron";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button, Card, Space, Table, Input, Modal, Checkbox } from "antd";
 import Column from "antd/es/table/Column";
 import {
@@ -10,8 +9,8 @@ import {
 } from "@ant-design/icons";
 // import promiseIpc from "electron-promise-ipc";
 
-import { trpc, trpcClient } from "../../../../utils/trpc";
-import { useNavigate } from "react-router-dom";
+import { trpc } from "../../../../utils/trpc";
+import { AccountInfo } from "../../../../api/router/account";
 
 interface CreateAccountRef {
   account?: string;
@@ -67,13 +66,26 @@ const createAccountModal = (param: {
 };
 
 const AccountView: React.FC = () => {
-  const navigate = useNavigate();
+  const [accounts, setAccounts] = useState<AccountInfo[]>([])
   const inputValueRef = useRef<CreateAccountRef>({});
 
-  const validAccounts = trpc.account.getValidAccount.useQuery();
-  const invalidAccounts = trpc.account.getInvalidAccount.useQuery();
-  const accountMutation = trpc.account.add.useMutation();
+  const context = trpc.useContext();
+
+  const accountAddMutation = trpc.account.add.useMutation();
+  const accountLoginMutation = trpc.account.loginAccount.useMutation();
   const mutation = trpc.store.setStore.useMutation();
+
+
+  useLayoutEffect(()=> {
+    const fetchData = async () => {
+     const validAccount = await context.account.getValidAccount.fetch();
+     setAccounts(validAccount);
+    };
+    fetchData().catch(ex=> {
+      console.error(ex)
+    })
+  },[]);
+
   return (
     <div className="card">
       <Card title="帐号管理" bordered={false} style={{ width: "100%" }}>
@@ -87,7 +99,6 @@ const AccountView: React.FC = () => {
               createAccountModal({
                 ref: inputValueRef,
                 onOk: (ref: CreateAccountRef) => {
-                  console.error(1111, ref);
                   const {
                     account,
                     password,
@@ -102,7 +113,7 @@ const AccountView: React.FC = () => {
                   ) {
                     return;
                   }
-                  accountMutation.mutate({
+                  accountAddMutation.mutate({
                     account: account,
                     password: password,
                     isShort: isShort,
@@ -123,7 +134,7 @@ const AccountView: React.FC = () => {
             onClick={() => {
               // const data = await trpcClient.account.getValidAccount.query();
               // console.error(1111, data);
-              window.launchPlaywright();
+              window.playwrightLogin();
               // ipcRenderer.send("launchPlaywright");
             }}
           >
@@ -135,6 +146,12 @@ const AccountView: React.FC = () => {
             shape="round"
             icon={<PlaySquareOutlined />}
             size="large"
+            onClick={async () => {
+              window.playwrightPay()
+              // accountLoginMutation.mutate({account:"2547960062@qq.com"})
+              // const list = await context.account.getValidAccount.fetch();
+              // setAccounts(list)
+            }}
           >
             启动
           </Button>
@@ -142,30 +159,33 @@ const AccountView: React.FC = () => {
 
         <Table
           key="id"
-          dataSource={validAccounts.data}
+          dataSource={accounts}
           rowKey={(record: { id: number }) => `${record.id}`}
           style={{ marginTop: "20px" }}
         >
           <Column title="id" dataIndex="id" key="id" width={50} />
-          <Column title="支付宝帐号" dataIndex="account" key="id" />
+          <Column title="支付宝帐号" dataIndex="account" key="id" width={300}/>
           <Column
             title="是否为企业帐号"
             dataIndex="isEnterprise"
             width={150}
             key="isEnterprise"
-            render={(record) => <div>{record}</div>}
+            render={(record) => <div>{record?"是":"否"}</div>}
           />
           <Column
             title="是否短密码"
             dataIndex="isShort"
             key="isShort"
             width={120}
+            render={(record) => <div>{record?"是":"否"}</div>}
+
           />
           <Column
             title="是否已登录"
-            dataIndex="isAlipayLogin"
-            key="name"
+            dataIndex="isLogin"
+            key="isLogin"
             width={120}
+            render={(record) => <div>{record?"是":"否"}</div>}
           />
           <Column title="工作状态" dataIndex="state" key="name" width={120} />
           <Column title="操作" dataIndex="state" key="name" />

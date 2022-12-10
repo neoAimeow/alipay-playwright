@@ -5,7 +5,7 @@ import FormData from "form-data";
 import { BaseResult } from "../types/common";
 import { UserInfo } from "../types/user";
 import { TRPCError } from "@trpc/server";
-import { cacheMap } from "./memory";
+import { memoryMap } from "./memory";
 
 export const userRouter = t.router({
   login: t.procedure
@@ -22,7 +22,7 @@ export const userRouter = t.router({
           type: "alipay",
         })
       );
-      form.append("token", cacheMap.get("token") ?? "")
+      form.append("token", memoryMap.get("token") ?? "")
 
       const result = await request.post<BaseResult<UserInfo>>("", form);
       const { code, data, message } = result.data;
@@ -40,14 +40,14 @@ export const userRouter = t.router({
     .mutation(async () => {
       const form = new FormData();
       form.append("func", "alipayStatus");
-      form.append("user", cacheMap.get("username") ?? "");
+      form.append("user", memoryMap.get("username") ?? "");
       form.append(
         "params",
         JSON.stringify({
           status: 1,
         })
       );
-      form.append("token", cacheMap.get("token") ?? "")
+      form.append("token", memoryMap.get("token") ?? "")
 
       await request.post("", form)
       return true ;
@@ -58,7 +58,7 @@ export const userRouter = t.router({
     .mutation(async () => {
       const form = new FormData();
       form.append("func", "alipayStatus");
-      // form.append("user", cacheMap.get("username") ?? "");
+      // form.append("user", memoryMap.get("username") ?? "");
       form.append("user", "test1");
       form.append(
         "params",
@@ -66,7 +66,7 @@ export const userRouter = t.router({
           status: 0,
         })
       );
-      form.append("token", cacheMap.get("token") ?? "")
+      form.append("token", memoryMap.get("token") ?? "")
 
       await request.post("", form);
       return true;

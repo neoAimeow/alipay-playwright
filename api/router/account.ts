@@ -1,13 +1,22 @@
 import { t } from "../context";
 import { z } from "zod";
 import { AccountMapper } from "../../mapper/mapper";
+import { Account } from "@prisma/client";
+import { AccountState, AccountStateManager, WorkState } from "../../utils/account-state-manager";
+
+
+
+export interface AccountInfo extends Account {
+  isLogin?: boolean
+  workState?: WorkState
+}
 
 export const accountRouter = t.router({
-  getValidAccount: t.procedure.query(({ ctx }) => {
+  getValidAccount: t.procedure.query(async ({ ctx }) => {
     return AccountMapper.getInstance(ctx.prisma).getValidAccount();
   }),
 
-  getInvalidAccount: t.procedure.query(({ ctx }) => {
+  getInvalidAccount: t.procedure.query(async ({ ctx }) => {
     return AccountMapper.getInstance(ctx.prisma).getInvalidAccount();
   }),
 
@@ -33,5 +42,35 @@ export const accountRouter = t.router({
     .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => {
       return AccountMapper.getInstance(ctx.prisma).remove(input.id);
+    }),
+
+  loginAccount:t.procedure.input(z.object({account:z.string()}))
+  .mutation(({  input }) => {
+    return AccountStateManager.getInstance().loginAccount(input.account)
+  }),
+
+  offsetLoginAccount:t.procedure.input(z.object({account:z.string()}))
+    .mutation(({  input }) => {
+      return AccountStateManager.getInstance().offsetLoginAccount(input.account)
+    }),
+
+  getLoginUserList:t.procedure
+    .query(() => {
+      return AccountStateManager.getInstance().getLoginUserList()
+    }),
+
+  accountToWork:t.procedure.input(z.object({account:z.string()}))
+    .mutation(({  input }) => {
+      return AccountStateManager.getInstance().accountToWork(input.account)
+    }),
+
+  accountToOnCall:t.procedure.input(z.object({account:z.string()}))
+    .mutation(({  input }) => {
+      return AccountStateManager.getInstance().accountToOnCall(input.account)
+    }),
+
+  accountToError:t.procedure.input(z.object({account:z.string()}))
+    .mutation(({  input }) => {
+      return AccountStateManager.getInstance().accountToError(input.account)
     }),
 });

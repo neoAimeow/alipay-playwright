@@ -1,5 +1,3 @@
-import { t } from "../api/context";
-import { z } from "zod";
 import { PrismaClient } from "@prisma/client";
 
 export type supportType =
@@ -8,6 +6,7 @@ export type supportType =
   | boolean
   | Record<string, unknown>
   | undefined
+  | string[]
   | unknown;
 
 export class CacheManager {

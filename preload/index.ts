@@ -16,20 +16,32 @@ export const exposeElectronTRPC = ({
   });
 };
 
-export const exposePlaywright = ({
+export const exposePlaywrightLogin = ({
   contextBridge,
   ipcRenderer,
 }: exposeType) => {
-  return contextBridge.exposeInMainWorld("launchPlaywright", () => {
-    console.error("1111test");
+  return contextBridge.exposeInMainWorld("playwrightLogin", () => {
     ipcRenderer
-      .invoke("launchPlaywright")
+      .invoke("playwright-login")
+      .then((res) => {})
+      .catch((ex) => {});
+  });
+};
+
+export const exposePlaywrightPay = ({
+                                        contextBridge,
+                                        ipcRenderer,
+                                      }: exposeType) => {
+  return contextBridge.exposeInMainWorld("playwrightPay", () => {
+    ipcRenderer
+      .invoke("playwright-pay")
       .then((res) => {})
       .catch((ex) => {});
   });
 };
 
 process.once("loaded", () => {
-  exposePlaywright({ contextBridge, ipcRenderer });
+  exposePlaywrightLogin({ contextBridge, ipcRenderer });
+  exposePlaywrightPay({ contextBridge, ipcRenderer });
   exposeElectronTRPC({ contextBridge, ipcRenderer });
 });

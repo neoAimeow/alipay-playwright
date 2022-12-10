@@ -135,6 +135,19 @@ export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
       return resolveIPCResponse(opts);
     }
   );
+
+
+  ipcMain.handle(
+    "playwright-login", async () => {
+      await AlipayPlayWright.getInstance().login()
+    }
+  );
+
+  ipcMain.handle(
+    "playwright-pay", async () => {
+      await AlipayPlayWright.getInstance().pay()
+    }
+  );
 }
 
 async function resolveIPCResponse<TRouter extends AnyRouter>(
@@ -238,13 +251,4 @@ async function resolveIPCResponse<TRouter extends AnyRouter>(
 app.on("ready", () => {
   createIPCHandler({ ipcMain });
 
-  ipcMain.handle(
-    "launchPlaywright",
-    async (event: Electron.IpcMainInvokeEvent, opts: IPCRequestOptions) => {
-      console.error("handle testtesttest");
-      const playwright = AlipayPlayWright.getInstance()
-      await playwright.login();
-      // return launchPlaywright();
-    }
-  );
 });

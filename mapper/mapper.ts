@@ -1,8 +1,15 @@
 import { Account, PrismaClient } from "@prisma/client";
 import { prisma } from "../api/db/client";
+import { AccountStateManager } from "../utils/account-state-manager";
+import { AccountInfo } from "../api/router/account";
 
 // electron中不能直接用prisma或其它数据通信。所以统一通过trpc来做数据处理。
 // 但是在ipcRenderer可直接用prisma。且用trpc会有bug，所以在handler中直接用
+
+function isEqual(element:string, account: string) {
+  return (element === account);
+}
+
 export class AccountMapper {
   private static instance: AccountMapper | undefined;
   private prisma: PrismaClient;
@@ -19,12 +26,33 @@ export class AccountMapper {
     return AccountMapper.instance;
   }
 
-  public getValidAccount(): Promise<Account[]> {
-    return this.prisma.account.findMany({ where: { valid: true } });
+
+  public async getValidAccount(): Promise<AccountInfo[]> {
+    const accounts = await this.prisma.account.findMany({ where: { valid: true } });
+    const arr = AccountStateManager.getInstance().getLoginUserList();
+    const results:AccountInfo[] = [];
+
+    accounts.forEach((item)=>{
+      AccountStateManager.getInstance().addAccount(item.account)
+    })
+
+    accounts.forEach((item)=>{
+      const accountInfo:AccountInfo = {...item}
+      accountInfo.isLogin = arr.some((element=>isEqual(element, item.account)));
+      const accountState = AccountStateManager.getInstance().getAccountState(item.account);
+      accountInfo.workState = accountState?.workState;
+      results.push(accountInfo)
+    })
+
+    return results;
   }
 
-  public getInvalidAccount(): Promise<Account[]> {
-    return this.prisma.account.findMany({ where: { valid: false } });
+  public async getInvalidAccount(): Promise<Account[]> {
+    const accounts = await this.prisma.account.findMany({ where: { valid: false } });
+    accounts.forEach((value)=>{
+      AccountStateManager.getInstance().addAccount(value.account)
+    })
+    return accounts;
   }
 
   public async add(
