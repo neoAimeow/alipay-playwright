@@ -11,6 +11,8 @@ import {
 export interface AccountInfo extends Account {
   isLogin?: boolean;
   workState?: WorkState;
+  count?: number;
+  payment?:number;
 }
 
 export const accountRouter = t.router({

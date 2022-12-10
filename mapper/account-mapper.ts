@@ -2,6 +2,7 @@ import { Account, PrismaClient } from "@prisma/client";
 import { prisma } from "../api/db/client";
 import { AccountStateManager } from "../utils/account-state-manager";
 import { AccountInfo } from "../api/router/account";
+import { OrderRecordMapper } from "./order-record-mapper";
 
 // electron中不能直接用prisma或其它数据通信。所以统一通过trpc来做数据处理。
 // 但是在ipcRenderer可直接用prisma。且用trpc会有bug，所以在handler中直接用
@@ -28,7 +29,7 @@ export class AccountMapper {
 
   public async getValidAccount(): Promise<AccountInfo[]> {
     const accounts = await this.prisma.account.findMany({
-      where: { valid: true },
+      where: { valid: true, enable: true },
     });
     const arr = AccountStateManager.getInstance().getLoginUserList();
     const results: AccountInfo[] = [];
@@ -37,7 +38,7 @@ export class AccountMapper {
       AccountStateManager.getInstance().addAccount(item.account);
     });
 
-    accounts.forEach((item) => {
+    await Promise.all(accounts.map(async (item) => {
       const accountInfo: AccountInfo = { ...item };
       accountInfo.isLogin = arr.some((element) =>
         isEqual(element, item.account)
@@ -46,15 +47,20 @@ export class AccountMapper {
         item.account
       );
       accountInfo.workState = accountState?.workState;
+
+      const paymentInfo: {count:number; payment:number} = await OrderRecordMapper.getInstance(this.prisma).getPaymentInfoWithAccountId(item.id);
+      accountInfo.count = paymentInfo.count
+      accountInfo.payment = paymentInfo.payment
+
       results.push(accountInfo);
-    });
+    }))
 
     return results;
   }
 
   public async getInvalidAccount(): Promise<Account[]> {
     const accounts = await this.prisma.account.findMany({
-      where: { valid: false },
+      where: { valid: false, enable: true },
     });
     accounts.forEach((value) => {
       AccountStateManager.getInstance().addAccount(value.account);

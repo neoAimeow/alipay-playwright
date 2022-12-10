@@ -19,6 +19,7 @@ model Account {
   orders   OrderRecord[]
   isEnterprise Boolean @default(false)
   version Int @default(0)
+  enable Boolean @default(true)
 }
 
 model OrderRecord {
