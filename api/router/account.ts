@@ -42,6 +42,24 @@ export const accountRouter = t.router({
       );
     }),
 
+  updateAccount: t.procedure
+    .input(
+      z.object({
+        id: z.number(),
+        password: z.string(),
+        isShort: z.boolean(),
+        isEnterprise: z.boolean(),
+      })
+    )
+    .mutation(({ ctx, input }) => {
+      return AccountMapper.getInstance(ctx.prisma).update(
+        input.id,
+        input.password,
+        input.isShort,
+        input.isEnterprise
+      );
+    }),
+
   remove: t.procedure
     .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => {
@@ -73,9 +91,9 @@ export const accountRouter = t.router({
     }),
 
   invalidAccount: t.procedure
-    .input(z.object({ account: z.string() }))
+    .input(z.object({ id: z.number() }))
     .mutation(({ ctx, input }) => {
-      return AccountMapper.getInstance(ctx.prisma).invalidUser(input.account);
+      return AccountMapper.getInstance(ctx.prisma).invalidUser(input.id);
     }),
 
   disableAccount: t.procedure

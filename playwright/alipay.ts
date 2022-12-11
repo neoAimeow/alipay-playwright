@@ -51,6 +51,7 @@ export class AlipayPlayWright {
 
     await Promise.all(
       account.map(async (item) => {
+        const id = item.id;
         const username = item.account;
         const password = item.password;
         const isShort = item.isShort;
@@ -68,7 +69,7 @@ export class AlipayPlayWright {
 
         const content = await page.content();
         if (content.match("账号不存在")) {
-          await this.invalidUser(username);
+          await this.invalidUser(id);
           await context.close();
           return;
         } else if (content.match("输入短信验证码")) {
@@ -83,7 +84,7 @@ export class AlipayPlayWright {
           const finalStepContent = await page.content();
 
           if (finalStepContent.match("支付密码不正确")) {
-            await this.invalidUser(username);
+            await this.invalidUser(id);
           } else {
             // save cookie
             const cookies = await context.cookies();
@@ -274,8 +275,8 @@ export class AlipayPlayWright {
   }
 
   // 将用户加到黑名单中
-  private async invalidUser(account: string): Promise<void> {
-    return AccountMapper.getInstance(prisma).invalidUser(account);
+  private async invalidUser(id: number): Promise<void> {
+    return AccountMapper.getInstance(prisma).invalidUser(id);
   }
 
   private async saveCookies(account: string, cookies: Cookie[]): Promise<void> {

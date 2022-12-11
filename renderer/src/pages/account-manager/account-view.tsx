@@ -17,50 +17,60 @@ import {
 import { trpc } from "../../../../utils/trpc";
 import { AccountInfo } from "../../../../api/router/account";
 
-interface CreateAccountRef {
+interface AccountRef {
   account?: string;
   password?: string;
   isShort?: boolean;
   isEnterprise?: boolean;
 }
 
-const createAccountModal = (param: {
+const accountModal = (param: {
+  type: "create"|"update",
   ref: {
-    current: CreateAccountRef;
+    current: AccountRef;
   };
-  onOk?: (ref: CreateAccountRef) => void;
+  onOk?: (ref: AccountRef) => void;
   id?: number;
+  account?: AccountInfo
 }) => {
   Modal.confirm({
-    title: "创建帐号",
+    title: param.type === "create" ? "创建帐号":"修改帐号",
     icon: <FormOutlined />,
     content: (
       <div>
-        <Input
-          onChange={({ target: { value } }) => {
-            param.ref.current.account = value;
-          }}
-        />
-        <Input
-          onChange={({ target: { value } }) => {
-            param.ref.current.password = value;
-          }}
-        />
-        <Checkbox
-          onChange={({ target: { value } }) => {
-            param.ref.current.isShort = value as boolean;
-          }}
-        >
-          是否为短密码
-        </Checkbox>
-        <Checkbox
-          onChange={({ target: { value } }) => {
-            console.error(value);
-            param.ref.current.isEnterprise = value as boolean;
-          }}
-        >
-          是否为企业帐号
-        </Checkbox>
+        <Space direction="vertical" size="middle" style={{ display: "flex" }}>
+          <Input
+            value={param.type === "create" ? "" : param.account?.account ?? ""}
+            disabled={param.type !== "create"}
+            onChange={({ target: { value } }) => {
+              param.ref.current.account = value;
+            }}
+          />
+          <Input
+            onChange={({ target: { value } }) => {
+              param.ref.current.password = value;
+            }}
+          />
+          <Space>
+            <Checkbox
+              onChange={({ target: { value } }) => {
+                param.ref.current.isShort = value as boolean;
+              }}
+            >
+              是否为短密码
+            </Checkbox>
+            <Checkbox
+              onChange={({ target: { value } }) => {
+                console.error(value);
+                param.ref.current.isEnterprise = value as boolean;
+              }}
+            >
+              是否为企业帐号
+            </Checkbox>
+          </Space>
+
+        </Space>
+
       </div>
     ),
     onOk: () => {
@@ -73,11 +83,12 @@ const createAccountModal = (param: {
 const AccountView: React.FC = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [invalidAccounts, setInvalidAccounts] = useState<AccountInfo[]>([]);
-  const inputValueRef = useRef<CreateAccountRef>({});
+  const inputValueRef = useRef<AccountRef>({});
 
   const context = trpc.useContext();
 
   const accountAddMutation = trpc.account.add.useMutation();
+  const accountUpdateMutation = trpc.account.updateAccount.useMutation();
   const accountInvalidAccountMutation =
     trpc.account.invalidAccount.useMutation();
   const accountValidAccountMutation = trpc.account.validAccount.useMutation();
@@ -111,9 +122,10 @@ const AccountView: React.FC = () => {
               icon={<PlusOutlined />}
               size="large"
               onClick={() => {
-                createAccountModal({
+                accountModal({
                   ref: inputValueRef,
-                  onOk: (ref: CreateAccountRef) => {
+                  type: "create",
+                  onOk: (ref: AccountRef) => {
                     const {
                       account,
                       password,
@@ -147,10 +159,7 @@ const AccountView: React.FC = () => {
               icon={<PlusOutlined />}
               size="large"
               onClick={() => {
-                // const data = await trpcClient.account.getValidAccount.query();
-                // console.error(1111, data);
                 window.playwright.login();
-                // ipcRenderer.send("launchPlaywright");
               }}
             >
               批量添加
@@ -162,10 +171,7 @@ const AccountView: React.FC = () => {
               icon={<PlaySquareOutlined />}
               size="large"
               onClick={async () => {
-                // window.playwright.login();
-                // accountLoginMutation.mutate({account:"2547960062@qq.com"})
-                // const list = await context.account.getValidAccount.fetch();
-                // setAccounts(list)
+
               }}
             >
               启动
@@ -211,16 +217,16 @@ const AccountView: React.FC = () => {
             <Column title="支付金额" dataIndex="payment" key="payment" width={120} />
             <Column
               title="操作"
-              dataIndex="account"
-              key="account"
-              render={(value) => (
+              dataIndex="id"
+              key="id"
+              render={(value, record) => (
                 <div>
                   <Space>
                     <Button
                       onClick={() => {
                         const invalidAccountMutate = async () => {
                           await accountInvalidAccountMutation.mutateAsync({
-                            account: value as string,
+                            id: value as number,
                           });
                         };
                         invalidAccountMutate()
@@ -235,7 +241,31 @@ const AccountView: React.FC = () => {
 
                     <Button
                       onClick={() => {
-
+                        console.error(1111, record)
+                        accountModal({
+                          ref: inputValueRef,
+                          type: "update",
+                          account: record as AccountInfo,
+                          onOk: (ref: AccountRef) => {
+                            const {
+                              password,
+                              isShort = false,
+                              isEnterprise = false,
+                            } = ref;
+                            if (
+                              password == "" ||
+                              !password
+                            ) {
+                              return;
+                            }
+                            accountUpdateMutation.mutate({
+                              id: value as number,
+                              password: password,
+                              isShort: isShort,
+                              isEnterprise: isEnterprise,
+                            });
+                          },
+                        });
                       }}
                     >
                       编辑
@@ -278,20 +308,6 @@ const AccountView: React.FC = () => {
               dataIndex="account"
               key="id"
               width={300}
-            />
-            <Column
-              title="是否为企业帐号"
-              dataIndex="isEnterprise"
-              width={150}
-              key="isEnterprise"
-              render={(record) => <div>{record ? "是" : "否"}</div>}
-            />
-            <Column
-              title="是否短密码"
-              dataIndex="isShort"
-              key="isShort"
-              width={120}
-              render={(record) => <div>{record ? "是" : "否"}</div>}
             />
             <Column
               title="操作"

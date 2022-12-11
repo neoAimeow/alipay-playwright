@@ -1,5 +1,4 @@
 import { Account, PrismaClient } from "@prisma/client";
-import { prisma } from "../api/db/client";
 import { AccountStateManager } from "../utils/account-state-manager";
 import { AccountInfo } from "../api/router/account";
 import { OrderRecordMapper } from "./order-record-mapper";
@@ -29,7 +28,7 @@ export class AccountMapper {
 
   public async getValidAccount(): Promise<AccountInfo[]> {
     const accounts = await this.prisma.account.findMany({
-      where: { valid: true, enable: true },
+      where: { valid: true},
     });
     const arr = AccountStateManager.getInstance().getLoginUserList();
     const results: AccountInfo[] = [];
@@ -85,17 +84,35 @@ export class AccountMapper {
     });
   }
 
+  public async update(
+    id: number,
+    password: string,
+    isShort: boolean,
+    isEnterprise: boolean
+  ): Promise<void> {
+    await this.prisma.account.update({
+      data: {
+        password: password,
+        isShort: isShort,
+        isEnterprise: isEnterprise,
+        valid: true,
+      },
+      where: {id:id}
+    });
+  }
+
+
   public async remove(id: number): Promise<void> {
     await this.prisma.account.delete({ where: { id: id } });
   }
 
   public async validUser(account: string): Promise<void> {
-    const data = await prisma.account.findFirst({
+    const data = await this.prisma.account.findFirst({
       where: { account: account },
     });
 
     if (data) {
-      await prisma.account.updateMany({
+      await this.prisma.account.updateMany({
         data: {
           valid: true,
           version: {
@@ -110,13 +127,13 @@ export class AccountMapper {
     }
   }
 
-  public async invalidUser(account: string): Promise<void> {
-    const data = await prisma.account.findFirst({
-      where: { account: account },
+  public async invalidUser(id: number): Promise<void> {
+    const data = await this.prisma.account.findFirst({
+      where: { id: id },
     });
 
     if (data) {
-      await prisma.account.updateMany({
+      await this.prisma.account.updateMany({
         data: {
           valid: false,
           version: {
@@ -124,7 +141,7 @@ export class AccountMapper {
           },
         },
         where: {
-          account: account,
+          id: id,
           version: data.version,
         },
       });
@@ -132,23 +149,24 @@ export class AccountMapper {
   }
 
   public async disableAccount(account: string): Promise<void> {
-    const data = await prisma.account.findFirst({
+    const data = await this.prisma.account.findFirst({
       where: { account: account },
     });
-
     if (data) {
-      await prisma.account.updateMany({
+      const createPrism = this.prisma.accountTemp.create({
         data: {
-          enable: false,
-          version: {
-            increment: 1,
-          },
-        },
-        where: {
-          account: account,
-          version: data.version,
-        },
-      });
+          account: data.account,
+          password: data.password,
+          isShort: data.isShort,
+          isEnterprise: data.isEnterprise
+        }
+      })
+      const deletePrism = this.prisma.account.delete({where:{id:data.id}})
+
+
+      await  this.prisma.$transaction([
+        createPrism, deletePrism,
+      ])
     }
   }
 }
