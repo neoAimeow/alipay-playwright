@@ -13,27 +13,26 @@ const LoginView = (props: LoginViewProps) => {
 
   const userContext = trpc.useContext().user;
 
-  const userNameQuery = trpc.store.getStore.useQuery({ key: "username" });
-  const passwordQuery = trpc.store.getStore.useQuery({ key: "password" });
-  const autoLoginQuery = trpc.store.getStore.useQuery({ key: "autoLogin" });
+  const userNameQuery = trpc.store.getStore.useQuery({ key: "input_username" });
+  const passwordQuery = trpc.store.getStore.useQuery({ key: "input_password" });
+  const autoLoginQuery = trpc.store.getStore.useQuery({ key: "input_autoLogin" });
 
   const storeMutation = trpc.store.setStore.useMutation();
-  const memoryMutation = trpc.memory.setMemory.useMutation();
   const heartBeatMutation = trpc.user.heartBeat.useMutation();
 
   const loginFunc = (usernameParam: string, passwordParam: string) => {
     heartDownMutation.mutate();
-    
+
     userContext.login
       .fetch({
         username: usernameParam,
         password: passwordParam,
       })
       .then((res) => {
-        memoryMutation.mutate({ key: "userInfo", value: res });
-        memoryMutation.mutate({ key: "is_login", value: "true" });
-        memoryMutation.mutate({ key: "username", value: usernameParam });
-        res.token && memoryMutation.mutate({ key: "token", value: res.token });
+        storeMutation.mutate({ key: "userInfo", value: res });
+        storeMutation.mutate({ key: "is_login", value: "true" });
+        storeMutation.mutate({ key: "username", value: usernameParam });
+        res.token && storeMutation.mutate({ key: "token", value: res.token });
         setInterval(() => {
           // 开启心跳包
           heartBeatMutation.mutate();
@@ -65,16 +64,16 @@ const LoginView = (props: LoginViewProps) => {
   const onFinish = (values: Record<string, string | boolean>) => {
     const { un, pwd, al } = values;
     if (un && pwd) {
-      al && storeMutation.mutate({ key: "autoLogin", value: al });
-      un && storeMutation.mutate({ key: "username", value: un });
-      pwd && storeMutation.mutate({ key: "password", value: pwd });
+      al && storeMutation.mutate({ key: "input_autoLogin", value: al });
+      un && storeMutation.mutate({ key: "input_username", value: un });
+      pwd && storeMutation.mutate({ key: "input_password", value: pwd });
       loginFunc(un as string, pwd as string);
     }
   };
 
   return (
-    <div className="login-card">
-      <Card title="KFC自动化支付工具" bordered={false} style={{ width: 400 }}>
+    <div className="login-card" style={{width: "100%",height:"100vh", display:"flex", justifyContent:"center", alignItems:"center"}}>
+      <Card title="KFC自动化支付工具" bordered={false} style={{ width: 400,  }}>
         <Form
           name="basic"
           labelCol={{ span: 5 }}

@@ -16,6 +16,7 @@ import {
 
 import { trpc } from "../../../../utils/trpc";
 import { AccountInfo } from "../../../../api/router/account";
+import { Order } from "../../../../api/router/order";
 
 interface AccountRef {
   account?: string;
@@ -84,6 +85,7 @@ const AccountView: React.FC = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [invalidAccounts, setInvalidAccounts] = useState<AccountInfo[]>([]);
   const inputValueRef = useRef<AccountRef>({});
+  const [orders, setOrders] = useState<Order[]>([])
 
   const context = trpc.useContext();
 
@@ -105,11 +107,14 @@ const AccountView: React.FC = () => {
 
       const invalidAccount = await context.account.getInvalidAccount.fetch();
       setInvalidAccounts(invalidAccount);
+
+      const orders = await context.order.getOrder.fetch();
+      setOrders(orders)
     };
     fetchData().catch((ex) => {
       console.error(ex);
     });
-  }, [context.account.getInvalidAccount, context.account.getValidAccount]);
+  }, [context.account.getInvalidAccount, context.account.getValidAccount, context.order.getOrder]);
 
   return (
     <div className="card">
@@ -170,7 +175,7 @@ const AccountView: React.FC = () => {
               shape="round"
               icon={<PlaySquareOutlined />}
               size="large"
-              onClick={async () => {
+              onClick={() => {
 
               }}
             >
@@ -233,7 +238,9 @@ const AccountView: React.FC = () => {
                           .then(() => {
                             reloadData();
                           })
-                          .catch(() => {});
+                          .catch((ex) => {
+                            console.error(ex)
+                          });
                       }}
                     >
                       设为失效
@@ -282,13 +289,42 @@ const AccountView: React.FC = () => {
                           .then(() => {
                             reloadData();
                           })
-                          .catch(() => {});
+                          .catch((ex) => {
+                            console.error(ex)
+                          });
                       }}
                     >
                       删除帐号
                     </Button>
                   </Space>
 
+                </div>
+              )}
+            />
+          </Table>
+        </Card>
+
+        <Card title="订单列表" bordered={false} style={{ width: "100%" }}>
+          <Table
+            key="id"
+            dataSource={orders}
+            rowKey={(record: { id: number }) => `${record.id}`}
+            style={{ marginTop: "20px" }}
+          >
+            <Column title="id" dataIndex="id" key="id" width={50} />
+            <Column
+              title="kfcOrderId"
+              dataIndex="kfcOrderId"
+              key="kfcOrderId"
+              width={300}
+            />
+            <Column
+              title="支付链接"
+              dataIndex="payUrl"
+              key="payUrl"
+              render={(value) => (
+                <div>
+                  <a href={value as string}>支付链接</a>
                 </div>
               )}
             />
@@ -327,7 +363,9 @@ const AccountView: React.FC = () => {
                      .then(() => {
                        reloadData();
                      })
-                     .catch(() => {});
+                     .catch((ex) => {
+                       console.error(ex)
+                     });
                  }}
                >
                  恢复正常
@@ -343,7 +381,9 @@ const AccountView: React.FC = () => {
                      .then(() => {
                        reloadData();
                      })
-                     .catch(() => {});
+                     .catch((ex) => {
+                       console.error(ex)
+                     });
                  }}
                >
                  删除帐号

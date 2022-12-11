@@ -6,11 +6,12 @@ import { BaseResult } from "../types/common";
 import { UserInfo } from "../types/user";
 import { TRPCError } from "@trpc/server";
 import { memoryMap } from "./memory";
+import { CacheManager } from "../../utils/cache";
 
 export const userRouter = t.router({
   login: t.procedure
     .input(z.object({ username: z.string(), password: z.string() }))
-    .query(async ({ input }) => {
+    .query(async ({ input , ctx}) => {
       const form = new FormData();
       form.append("func", "shopLogin");
       form.append("user", input.username);
@@ -22,7 +23,7 @@ export const userRouter = t.router({
           type: "alipay",
         })
       );
-      form.append("token", memoryMap.get("token") ?? "")
+      form.append("token", await CacheManager.getInstance(ctx.prisma).getStore("username") ?? "")
 
       const result = await request.post<BaseResult<UserInfo>>("", form);
       const { code, data, message } = result.data;
@@ -37,17 +38,17 @@ export const userRouter = t.router({
 
   // 心跳
   heartBeat: t.procedure
-    .mutation(async () => {
+    .mutation(async ({ctx}) => {
       const form = new FormData();
       form.append("func", "alipayStatus");
-      form.append("user", memoryMap.get("username") ?? "");
+      form.append("user", await CacheManager.getInstance(ctx.prisma).getStore("username") ?? "");
       form.append(
         "params",
         JSON.stringify({
           status: 1,
         })
       );
-      form.append("token", memoryMap.get("token") ?? "")
+      form.append("token", await CacheManager.getInstance(ctx.prisma).getStore("token") ?? "")
 
       await request.post("", form)
       return true ;
@@ -55,7 +56,7 @@ export const userRouter = t.router({
 
   // 心跳
   heartBeatDown: t.procedure
-    .mutation(async () => {
+    .mutation(async ({ctx}) => {
       const form = new FormData();
       form.append("func", "alipayStatus");
       // form.append("user", memoryMap.get("username") ?? "");
@@ -66,7 +67,7 @@ export const userRouter = t.router({
           status: 0,
         })
       );
-      form.append("token", memoryMap.get("token") ?? "")
+      form.append("token", await CacheManager.getInstance(ctx.prisma).getStore("token") ?? "")
 
       await request.post("", form);
       return true;

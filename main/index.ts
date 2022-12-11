@@ -13,6 +13,7 @@ import { createContext } from "../api/context";
 import { appRouter } from "../api/router";
 import type { IPCRequestOptions, IPCResponse } from "../types";
 import { AlipayPlayWright } from "../playwright/alipay";
+import { trpcClient } from "../utils/trpc";
 
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
@@ -28,6 +29,7 @@ app.on("second-instance", () => {
 app.disableHardwareAcceleration();
 
 app.on("window-all-closed", () => {
+  trpcClient.user.heartBeatDown.mutate();
   if (process.platform !== "darwin") {
     app.quit();
   }
@@ -38,6 +40,7 @@ app.on("activate", () => {
     throw err;
   });
 });
+
 
 app
   .whenReady()

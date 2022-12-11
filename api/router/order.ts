@@ -3,16 +3,34 @@ import { z } from "zod";
 import request from "../../utils/axios";
 import { memoryMap } from "./memory";
 import FormData from "form-data";
+import { TRPCError } from "@trpc/server";
+import { BaseResult } from "../types/common";
+import { CacheManager } from "../../utils/cache";
+
+export interface Order {
+  kfcOrderId: string,
+  payUrl: string,
+  isSuccess: boolean,
+  id: number,
+}
 
 export const orderRouter = t.router({
   // 获取订单信息
-  getOrder: t.procedure.query(async () => {
-    const form = new FormData();
+  getOrder: t.procedure.query(async ({ ctx }) => {
+        const form = new FormData();
     form.append("func", "queryOrdersToPay");
-    form.append("user", memoryMap.get("username") ?? "");
-    form.append("token", memoryMap.get("token") ?? "");
+    form.append("user", await CacheManager.getInstance(ctx.prisma).getStore("username") ?? "");
+    form.append("token", await CacheManager.getInstance(ctx.prisma).getStore("token") ?? "");
     form.append("params", "{}");
-    return await request.post("", form);
+    const result = await request.post<BaseResult<Order[]>>("", form);
+    const { code, data, message } = result.data;
+    if (code != 0) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: message,
+      });
+    }
+    return data;
   }),
 
   // 上报支付结果
@@ -25,11 +43,11 @@ export const orderRouter = t.router({
         errorMsg: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input ,ctx}) => {
       const form = new FormData();
       form.append("func", "payResult");
-      form.append("user", memoryMap.get("username") ?? "");
-      form.append("token", memoryMap.get("token") ?? "");
+      form.append("user", await CacheManager.getInstance(ctx.prisma).getStore("username") ?? "");
+      form.append("token", await CacheManager.getInstance(ctx.prisma).getStore("token") ?? "");
       form.append(
         "params",
         JSON.stringify({

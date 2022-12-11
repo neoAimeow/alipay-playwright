@@ -18,12 +18,9 @@ const items: MenuProps["items"] = [
 ];
 const HomeView: React.FC = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState<boolean>(true);
-
-  const heartDownMutation = trpc.user.heartBeatDown.useMutation();
+  const [isLogin, setIsLogin] = useState<boolean>(false);
 
   const onClick: MenuProps["onClick"] = (e) => {
-    console.log("click ", e);
     switch (e.key) {
       case "1":
         navigate("account");
