@@ -15,7 +15,9 @@ const LoginView = (props: LoginViewProps) => {
 
   const userNameQuery = trpc.store.getStore.useQuery({ key: "input_username" });
   const passwordQuery = trpc.store.getStore.useQuery({ key: "input_password" });
-  const autoLoginQuery = trpc.store.getStore.useQuery({ key: "input_autoLogin" });
+  const autoLoginQuery = trpc.store.getStore.useQuery({
+    key: "input_autoLogin",
+  });
 
   const storeMutation = trpc.store.setStore.useMutation();
   const heartBeatMutation = trpc.user.heartBeat.useMutation();
@@ -72,8 +74,17 @@ const LoginView = (props: LoginViewProps) => {
   };
 
   return (
-    <div className="login-card" style={{width: "100%",height:"100vh", display:"flex", justifyContent:"center", alignItems:"center"}}>
-      <Card title="KFC自动化支付工具" bordered={false} style={{ width: 400,  }}>
+    <div
+      className="login-card"
+      style={{
+        width: "100%",
+        height: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <Card title="KFC自动化支付工具" bordered={false} style={{ width: 400 }}>
         <Form
           name="basic"
           labelCol={{ span: 5 }}

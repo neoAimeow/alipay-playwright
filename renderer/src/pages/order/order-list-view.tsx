@@ -4,7 +4,7 @@ import { Button, Card, Checkbox, Form, Input } from "antd";
 const OrderListView: React.FC = () => {
   const onFinish = (values: Record<string, string | boolean>) => {
     const { link } = values;
-    window.playwright.test(link as string);
+    // window.playwright.pay(new Order());
     // payIpc(link as string);
   };
   return (

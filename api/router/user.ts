@@ -11,7 +11,7 @@ import { CacheManager } from "../../utils/cache";
 export const userRouter = t.router({
   login: t.procedure
     .input(z.object({ username: z.string(), password: z.string() }))
-    .query(async ({ input , ctx}) => {
+    .query(async ({ input, ctx }) => {
       const form = new FormData();
       form.append("func", "shopLogin");
       form.append("user", input.username);
@@ -27,6 +27,9 @@ export const userRouter = t.router({
 
       const result = await request.post<BaseResult<UserInfo>>("", form);
       const { code, data, message } = result.data;
+      console.error(1111, result.data);
+
+
       if (code != 0) {
         throw new TRPCError({
           code: "UNAUTHORIZED",
@@ -38,7 +41,7 @@ export const userRouter = t.router({
 
   // 心跳
   heartBeat: t.procedure
-    .mutation(async ({ctx}) => {
+    .mutation(async ({ ctx }) => {
       const form = new FormData();
       form.append("func", "alipayStatus");
       form.append("user", await CacheManager.getInstance(ctx.prisma).getStore("username") ?? "");
@@ -51,12 +54,12 @@ export const userRouter = t.router({
       form.append("token", await CacheManager.getInstance(ctx.prisma).getStore("token") ?? "")
 
       await request.post("", form)
-      return true ;
+      return true;
     }),
 
   // 心跳
   heartBeatDown: t.procedure
-    .mutation(async ({ctx}) => {
+    .mutation(async ({ ctx }) => {
       const form = new FormData();
       form.append("func", "alipayStatus");
       // form.append("user", memoryMap.get("username") ?? "");

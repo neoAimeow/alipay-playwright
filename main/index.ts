@@ -14,6 +14,7 @@ import { appRouter } from "../api/router";
 import type { IPCRequestOptions, IPCResponse } from "../types";
 import { AlipayPlayWright } from "../playwright/alipay";
 import { trpcClient } from "../utils/trpc";
+import { Order } from "../api/router/order";
 
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
@@ -40,7 +41,6 @@ app.on("activate", () => {
     throw err;
   });
 });
-
 
 app
   .whenReady()
@@ -143,12 +143,8 @@ export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
     await AlipayPlayWright.getInstance().login();
   });
 
-  ipcMain.handle("playwright-pay", async () => {
-    await AlipayPlayWright.getInstance().pay();
-  });
-
-  ipcMain.handle("playwright-test", async (event, value: string) => {
-    await AlipayPlayWright.getInstance().test(value);
+  ipcMain.handle("playwright-pay", async (event, orders: Order[]) => {
+    await AlipayPlayWright.getInstance().addTasks(orders);
   });
 }
 

@@ -6,6 +6,8 @@ import { AccountMapper } from "../mapper/account.mapper";
 import { AccountStateManager, WorkState } from "../utils/account-state-manager";
 import { AccountInfo } from "../api/router/account";
 import { dialog } from "electron";
+import { Order } from "../api/router/order";
+import { Queue } from "../utils/queue";
 
 const cookie_pre = "account_";
 const loginUrl =
@@ -29,6 +31,8 @@ export class AlipayPlayWright {
   }
 
   private defer: Deferred<Browser> | undefined;
+  private queue: Order[] = [];
+  private hasFreeAccount: boolean = true;
 
   private async launchPlaywright(): Promise<Browser> {
     if (this.defer) {
@@ -108,94 +112,46 @@ export class AlipayPlayWright {
         }
       })
     );
-    // await browser.close();
-    // this.defer = undefined
   }
 
-  public async pay(): Promise<void> {
-    const browser = await this.launchPlaywright();
-    const accounts = await this.loadUsers();
-    const account = accounts.find(
-      // (account) => account.account === "xqhl2020@163.com"
-      (account) => account.account === "18814888787"
-    );
-    console.error("account", account, accounts);
+  public async addTasks(orders: Order[]): Promise<void> {
+    orders.map((item) => {
+      this.queue.push(item);
+    });
+    await this.runTask();
+  }
 
-    if (account) {
-      const context = await browser.newContext(devices["iPhone 13"]);
-      await context.clearCookies();
-      const cookies = await this.loadCookies(account.account);
-      await context.addCookies(cookies);
-      const page = await context.newPage();
-
-      try {
-        await page.goto(payUrl, {
-          timeout: 5000,
-          waitUntil: "domcontentloaded",
-        });
-      } catch (ex) {
-        await context.close();
-        await this.pay();
-      }
-
-      await page.locator('a:has-text("继续浏览器付款")').click();
-
-      const content = await page.content();
-      if (content.match("付款方式")) {
-        // 此时界面有三种情况，花呗是还要点击确认交易才能输入密码，还有一种是直接输入密码或者点 确认支付 / 确认付款 才能进入密码输入界面
-        if (content.match(/确认交易|确认付款/)) {
-          await page
-            .locator("button[seed=v5_cashier_pre_confirm-submit]")
-            .click();
-        }
-        if ((await page.content()).match("输入支付密码")) {
-          await page.type("#pwd_unencrypt", account.password, {
-            delay: 100,
-          });
-
-          // 长密码还要手动点一下「确定」
-          if (!account.isShort) {
-            await page
-              .locator(
-                ".J-pwdValidate button[seed=v5_cashier_pre_confirm-submit]"
-              )
-              .click();
-          } else {
-            await page.waitForNavigation();
-          }
-          const finalContent = await page.content();
-          if (finalContent.match("校验码")) {
-            console.error("校验码");
-            await dialog
-              .showMessageBox({
-                type: "warning", //弹出框类型
-                title: "提示",
-                message: "请输入验证码",
-                buttons: ["知道了"],
-              })
-              .then((res) => console.log(res));
-            // 需要告警
-          }
-          // await page.locator(".J-pwd").fill(account.password);
-          // await page.locator('button:has-text("确定")').click();
-        }
-      } else {
-      }
+  private async runTask() {
+    if (!this.hasFreeAccount) {
+      return;
     }
 
-    // browser.
+    while (this.queue.length > 0) {
+      const order = this.queue.shift();
+      const accounts = await this.loadUsers();
+      const account = accounts.find(
+        (account) =>
+          account.isLogin &&
+          account.valid &&
+          account.workState === WorkState.ON_CALL
+      );
+
+      if (!account) {
+        this.hasFreeAccount = false;
+        return;
+      }
+
+      if (order && account) {
+        this.pay(order, account).finally(async () => {
+          this.hasFreeAccount = true;
+          await this.runTask();
+        });
+      }
+    }
   }
 
-  public async test(link: string): Promise<void> {
+  public async pay(order: Order, account: AccountInfo): Promise<void> {
     const browser = await this.launchPlaywright();
-    const accounts = await this.loadUsers();
-    const account = accounts.find(
-      (account) =>
-        account.isLogin &&
-        account.valid &&
-        account.workState === WorkState.ON_CALL
-    );
-
     if (account) {
       const context = await browser.newContext(devices["iPhone 13"]);
       await context.clearCookies();
@@ -204,20 +160,19 @@ export class AlipayPlayWright {
       const page = await context.newPage();
 
       try {
-        await page.goto(link, {
+        await page.goto(order.payUrl, {
           timeout: 5000,
           waitUntil: "domcontentloaded",
         });
       } catch (ex) {
         await context.close();
-        await this.pay();
+        await this.pay(order, account);
       }
 
       await page.locator('a:has-text("继续浏览器付款")').click();
 
       const content = await page.content();
       if (content.match("付款方式")) {
-        // 此时界面有三种情况，花呗是还要点击确认交易才能输入密码，还有一种是直接输入密码或者点 确认支付 / 确认付款 才能进入密码输入界面
         if (content.match(/确认交易|确认付款/)) {
           await page
             .locator("button[seed=v5_cashier_pre_confirm-submit]")
@@ -253,8 +208,6 @@ export class AlipayPlayWright {
               .then((res) => console.log(res));
             // 需要告警
           }
-          // await page.locator(".J-pwd").fill(account.password);
-          // await page.locator('button:has-text("确定")').click();
         }
       } else {
         await page.type("#pwd_unencrypt", account.password, {
@@ -265,8 +218,6 @@ export class AlipayPlayWright {
         }
       }
     }
-
-    // browser.
   }
 
   // 加载可用帐号

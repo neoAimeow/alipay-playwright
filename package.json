@@ -40,7 +40,6 @@
     "eslint": "^8.24.0",
     "eslint-plugin-react": "^7.31.8",
     "eslint-plugin-react-hooks": "^4.6.0",
-    "playwright": "^1.28.1",
     "prettier": "2.7.1",
     "react-error-overlay": "^6.0.9",
     "ts-node": "^10.9.1",
@@ -54,6 +53,7 @@
     "@trpc/react-query": "^10.0.0-proxy-beta.26",
     "@trpc/server": "^10.0.0-proxy-beta.26",
     "antd": "^5.0.2",
+    "playwright": "^1.28.1",
     "axios": "^1.2.0",
     "electron-promise-ipc": "^2.2.4",
     "electron-store": "^8.1.0",
@@ -63,7 +63,6 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.4.3",
-    "rxjs": "^7.6.0",
     "zod": "^3.19.1"
   }
 }
