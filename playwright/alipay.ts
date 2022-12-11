@@ -2,7 +2,7 @@ import { webkit, chromium, Browser, Page, devices, Cookie } from "playwright";
 import { prisma } from "../api/db/client";
 import promiseDefer, { Deferred } from "../utils/defer";
 import { CacheManager } from "../utils/cache";
-import { AccountMapper } from "../mapper/account-mapper";
+import { AccountMapper } from "../mapper/account.mapper";
 import { AccountStateManager, WorkState } from "../utils/account-state-manager";
 import { AccountInfo } from "../api/router/account";
 import { dialog } from "electron";

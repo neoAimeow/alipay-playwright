@@ -1,7 +1,7 @@
 import { Account, PrismaClient } from "@prisma/client";
 import { AccountStateManager } from "../utils/account-state-manager";
 import { AccountInfo } from "../api/router/account";
-import { OrderRecordMapper } from "./order-record-mapper";
+import { OrderRecordMapper } from "./order-record.mapper";
 
 // electron中不能直接用prisma或其它数据通信。所以统一通过trpc来做数据处理。
 // 但是在ipcRenderer可直接用prisma。且用trpc会有bug，所以在handler中直接用

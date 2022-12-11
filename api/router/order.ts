@@ -24,6 +24,7 @@ export const orderRouter = t.router({
     form.append("params", "{}");
     const result = await request.post<BaseResult<Order[]>>("", form);
     const { code, data, message } = result.data;
+    console.error(123123, result.data)
     if (code != 0) {
       throw new TRPCError({
         code: "BAD_REQUEST",
