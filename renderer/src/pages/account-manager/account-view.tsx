@@ -81,6 +81,7 @@ const AccountView: React.FC = () => {
   const accountInvalidAccountMutation =
     trpc.account.invalidAccount.useMutation();
   const accountValidAccountMutation = trpc.account.validAccount.useMutation();
+  const accountDisableMutation = trpc.account.disableAccount.useMutation();
 
   useLayoutEffect(() => {
     reloadData();
@@ -206,28 +207,58 @@ const AccountView: React.FC = () => {
               render={(record) => <div>{record ? "是" : "否"}</div>}
             />
             <Column title="工作状态" dataIndex="state" key="name" width={120} />
+            <Column title="支付单数" dataIndex="count" key="count" width={120} />
+            <Column title="支付金额" dataIndex="payment" key="payment" width={120} />
             <Column
               title="操作"
               dataIndex="account"
               key="account"
               render={(value) => (
                 <div>
-                  <Button
-                    onClick={() => {
-                      const invalidAccountMutate = async () => {
-                        await accountInvalidAccountMutation.mutateAsync({
-                          account: value as string,
-                        });
-                      };
-                      invalidAccountMutate()
-                        .then(() => {
-                          reloadData();
-                        })
-                        .catch(() => {});
-                    }}
-                  >
-                    设为失效
-                  </Button>
+                  <Space>
+                    <Button
+                      onClick={() => {
+                        const invalidAccountMutate = async () => {
+                          await accountInvalidAccountMutation.mutateAsync({
+                            account: value as string,
+                          });
+                        };
+                        invalidAccountMutate()
+                          .then(() => {
+                            reloadData();
+                          })
+                          .catch(() => {});
+                      }}
+                    >
+                      设为失效
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+
+                      }}
+                    >
+                      编辑
+                    </Button>
+
+                    <Button
+                      onClick={() => {
+                        const disableMutate = async () => {
+                          await accountDisableMutation.mutateAsync({
+                            account: value as string,
+                          });
+                        };
+                        disableMutate()
+                          .then(() => {
+                            reloadData();
+                          })
+                          .catch(() => {});
+                      }}
+                    >
+                      删除帐号
+                    </Button>
+                  </Space>
+
                 </div>
               )}
             />
@@ -268,22 +299,40 @@ const AccountView: React.FC = () => {
               key="account"
               render={(value) => (
                 <div>
-                  <Button
-                    onClick={() => {
-                      const validAccountMutate = async () => {
-                        await accountValidAccountMutation.mutateAsync({
-                          account: value as string,
-                        });
-                      };
-                      validAccountMutate()
-                        .then(() => {
-                          reloadData();
-                        })
-                        .catch(() => {});
-                    }}
-                  >
-                    恢复正常
-                  </Button>
+             <Space>
+               <Button
+                 onClick={() => {
+                   const validAccountMutate = async () => {
+                     await accountValidAccountMutation.mutateAsync({
+                       account: value as string,
+                     });
+                   };
+                   validAccountMutate()
+                     .then(() => {
+                       reloadData();
+                     })
+                     .catch(() => {});
+                 }}
+               >
+                 恢复正常
+               </Button>
+               <Button
+                 onClick={() => {
+                   const disableMutate = async () => {
+                     await accountDisableMutation.mutateAsync({
+                       account: value as string,
+                     });
+                   };
+                   disableMutate()
+                     .then(() => {
+                       reloadData();
+                     })
+                     .catch(() => {});
+                 }}
+               >
+                 删除帐号
+               </Button>
+             </Space>
                 </div>
               )}
             />

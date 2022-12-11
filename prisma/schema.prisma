@@ -19,7 +19,15 @@ model Account {
   orders   OrderRecord[]
   isEnterprise Boolean @default(false)
   version Int @default(0)
-  enable Boolean @default(true)
+}
+
+model AccountTemp {
+  id       Int           @id @default(autoincrement())
+  account  String
+  password String
+  isShort  Boolean       @default(true)
+  isEnterprise Boolean @default(false)
+  version Int @default(0)
 }
 
 model OrderRecord {
@@ -38,7 +46,6 @@ model Cache {
   // 乐观锁
   version Int @default(0)
 }
-
 
 model Log {
   id    Int    @id @default(autoincrement())

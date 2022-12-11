@@ -60,7 +60,7 @@ export class AccountMapper {
 
   public async getInvalidAccount(): Promise<Account[]> {
     const accounts = await this.prisma.account.findMany({
-      where: { valid: false, enable: true },
+      where: { valid: false },
     });
     accounts.forEach((value) => {
       AccountStateManager.getInstance().addAccount(value.account);
@@ -119,6 +119,27 @@ export class AccountMapper {
       await prisma.account.updateMany({
         data: {
           valid: false,
+          version: {
+            increment: 1,
+          },
+        },
+        where: {
+          account: account,
+          version: data.version,
+        },
+      });
+    }
+  }
+
+  public async disableAccount(account: string): Promise<void> {
+    const data = await prisma.account.findFirst({
+      where: { account: account },
+    });
+
+    if (data) {
+      await prisma.account.updateMany({
+        data: {
+          enable: false,
           version: {
             increment: 1,
           },

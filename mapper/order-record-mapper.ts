@@ -1,6 +1,4 @@
 import { OrderRecord, PrismaClient } from "@prisma/client";
-import { AccountMapper } from "./account-mapper";
-import { AccountStateManager } from "../utils/account-state-manager";
 export class OrderRecordMapper {
   private static instance: OrderRecordMapper | undefined;
   private prisma: PrismaClient;

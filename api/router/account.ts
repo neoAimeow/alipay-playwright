@@ -78,6 +78,12 @@ export const accountRouter = t.router({
       return AccountMapper.getInstance(ctx.prisma).invalidUser(input.account);
     }),
 
+  disableAccount: t.procedure
+    .input(z.object({ account: z.string() }))
+    .mutation(({ ctx, input }) => {
+      return AccountMapper.getInstance(ctx.prisma).disableAccount(input.account);
+    }),
+
   accountToWork: t.procedure
     .input(z.object({ account: z.string() }))
     .mutation(({ input }) => {
