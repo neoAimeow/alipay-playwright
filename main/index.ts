@@ -144,6 +144,7 @@ export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
   });
 
   ipcMain.handle("playwright-pay", async (event, orders: Order[]) => {
+    console.error("addtask", orders);
     await AlipayPlayWright.getInstance().addTasks(orders);
   });
 }

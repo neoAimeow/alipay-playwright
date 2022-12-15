@@ -115,6 +115,7 @@ export class AlipayPlayWright {
   }
 
   public async addTasks(orders: Order[]): Promise<void> {
+    console.error("addTask", orders);
     orders.map((item) => {
       this.queue.push(item);
     });
@@ -127,7 +128,6 @@ export class AlipayPlayWright {
     }
 
     while (this.queue.length > 0) {
-      const order = this.queue.shift();
       const accounts = await this.loadUsers();
       const account = accounts.find(
         (account) =>
@@ -136,14 +136,19 @@ export class AlipayPlayWright {
           account.workState === WorkState.ON_CALL
       );
 
+      console.error(1111, this.queue, account);
       if (!account) {
         this.hasFreeAccount = false;
         return;
       }
+      const order = this.queue.shift();
 
       if (order && account) {
         this.pay(order, account).finally(async () => {
           this.hasFreeAccount = true;
+          await AccountStateManager.getInstance().accountToOnCall(
+            account.account
+          );
           await this.runTask();
         });
       }
@@ -151,25 +156,20 @@ export class AlipayPlayWright {
   }
 
   public async pay(order: Order, account: AccountInfo): Promise<void> {
+    await AccountStateManager.getInstance().accountToWork(account.account);
     const browser = await this.launchPlaywright();
-    if (account) {
+    if (account && order && order.payUrl) {
       const context = await browser.newContext(devices["iPhone 13"]);
       await context.clearCookies();
       const cookies = await this.loadCookies(account.account);
       await context.addCookies(cookies);
       const page = await context.newPage();
 
-      try {
-        await page.goto(order.payUrl, {
-          timeout: 5000,
-          waitUntil: "domcontentloaded",
-        });
-      } catch (ex) {
-        await context.close();
-        await this.pay(order, account);
-      }
-
-      await page.locator('a:has-text("继续浏览器付款")').click();
+      await page.goto(order.payUrl, {
+        timeout: 1000,
+        waitUntil: "domcontentloaded",
+      });
+      await page.locator('a:has-text("继续浏览器付款")').click({});
 
       const content = await page.content();
       if (content.match("付款方式")) {
