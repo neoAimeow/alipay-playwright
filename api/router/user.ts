@@ -62,8 +62,7 @@ export const userRouter = t.router({
     .mutation(async ({ ctx }) => {
       const form = new FormData();
       form.append("func", "alipayStatus");
-      // form.append("user", memoryMap.get("username") ?? "");
-      form.append("user", "test1");
+      form.append("user", await CacheManager.getInstance(ctx.prisma).getStore("username") ?? "");
       form.append(
         "params",
         JSON.stringify({
@@ -71,7 +70,6 @@ export const userRouter = t.router({
         })
       );
       form.append("token", await CacheManager.getInstance(ctx.prisma).getStore("token") ?? "")
-
       await request.post("", form);
       return true;
     }),

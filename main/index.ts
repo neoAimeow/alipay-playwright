@@ -13,8 +13,12 @@ import { createContext } from "../api/context";
 import { appRouter } from "../api/router";
 import type { IPCRequestOptions, IPCResponse } from "../types";
 import { AlipayPlayWright } from "../playwright/alipay";
-import { trpcClient } from "../utils/trpc";
+// import { trpcClient } from "../utils/trpc";
 import { Order } from "../api/router/order";
+import FormData from "form-data";
+import { CacheManager } from "../utils/cache";
+import request from "../utils/axios";
+import { prisma } from "../api/db/client";
 
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
@@ -29,12 +33,34 @@ app.on("second-instance", () => {
 
 app.disableHardwareAcceleration();
 
-app.on("window-all-closed", () => {
-  trpcClient.user.heartBeatDown.mutate();
+app.on("window-all-closed", async () => {
+  // trpcClient.user.heartBeatDown.mutate();
+  await tearDown();
+
   if (process.platform !== "darwin") {
     app.quit();
   }
 });
+
+const tearDown = async () => {
+  const form = new FormData();
+  form.append("func", "alipayStatus");
+  form.append(
+    "user",
+    (await CacheManager.getInstance(prisma).getStore("username")) ?? ""
+  );
+  form.append(
+    "params",
+    JSON.stringify({
+      status: 0,
+    })
+  );
+  form.append(
+    "token",
+    (await CacheManager.getInstance(prisma).getStore("token")) ?? ""
+  );
+  await request.post("", form);
+};
 
 app.on("activate", () => {
   restoreOrCreateWindow().catch((err) => {
@@ -144,7 +170,6 @@ export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
   });
 
   ipcMain.handle("playwright-pay", async (event, orders: Order[]) => {
-    console.error("addtask", orders);
     await AlipayPlayWright.getInstance().addTasks(orders);
   });
 }

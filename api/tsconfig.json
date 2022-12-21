@@ -10,6 +10,7 @@
     "isolatedModules": true,
     "types": ["node"],
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "baseUrl": ".",
     "noEmit": true
   },

@@ -16,9 +16,9 @@ import {
 } from "@trpc/server/rpc";
 import { observable } from "@trpc/server/observable";
 
-export const trpcClient = createTRPCProxyClient<AppRouter>({
-  links: [ipcLink()],
-});
+// export const trpcClient = createTRPCProxyClient<AppRouter>({
+//   links: [ipcLink()],
+// });
 
 export const trpc = createTRPCReact<AppRouter>();
 

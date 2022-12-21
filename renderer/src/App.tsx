@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "./App.css";
 import axios from "axios";
-import { MemoryRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 import HomeView from "./pages/home-page/home-view";
 import AccountView from "./pages/account-manager/account-view";
 import LogView from "./pages/log-view/log-view";
