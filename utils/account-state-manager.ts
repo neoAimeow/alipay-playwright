@@ -38,7 +38,6 @@ export class AccountStateManager {
   }
 
   public loginAccount(account: string): void {
-    console.error("3333, subscribe", this.accountMap);
     const accountObj = this.accountMap.get(account);
     if (!accountObj) {
       return;

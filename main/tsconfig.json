@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "esnext",
-    "target": "esnext",
+    "module": "ES2022",
+    "target": "ES2022",
     "sourceMap": false,
     "moduleResolution": "Node",
     "skipLibCheck": true,
@@ -9,15 +9,30 @@
     "strictNullChecks": true,
     "esModuleInterop": true,
     "isolatedModules": true,
-    "lib": ["esnext"],
-    "types": ["node", "vite/client"],
+    "lib": [
+      "ES2021"
+    ],
+    "types": [
+      "node",
+      "vite/client"
+    ],
     "baseUrl": ".",
     "paths": {
-      "/@/*": ["./*"]
+      "/@/*": [
+        "./*"
+      ]
     },
     "resolveJsonModule": true,
     "noEmit": true
   },
-  "include": ["./**/*.ts", "./**/*.d.ts", "./../types/main-env.d.ts"],
-  "references": [{ "path": "../tsconfig.node.json" }]
+  "include": [
+    "./**/*.ts",
+    "./**/*.d.ts",
+    "./../types/main-env.d.ts"
+  ],
+  "references": [
+    {
+      "path": "../tsconfig.node.json"
+    }
+  ]
 }

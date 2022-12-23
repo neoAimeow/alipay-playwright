@@ -1,8 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2021"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -10,13 +14,21 @@
     "strict": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "ESNext",
+    "module": "ES2022",
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "../types/exposedInMainWorld.d.ts", "../utils"],
-  "references": [{ "path": "../tsconfig.node.json" }]
+  "include": [
+    "src",
+    "../types/exposedInMainWorld.d.ts",
+    "../utils"
+  ],
+  "references": [
+    {
+      "path": "../tsconfig.node.json"
+    }
+  ]
 }

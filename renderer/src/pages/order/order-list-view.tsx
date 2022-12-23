@@ -4,6 +4,11 @@ import { Button, Card, Checkbox, Form, Input } from "antd";
 const OrderListView: React.FC = () => {
   const onFinish = (values: Record<string, string | boolean>) => {
     const { link } = values;
+    const order1 = {
+      id: 1,
+      payUrl: link,
+    };
+    window.playwright.pay([order1]);
     // window.playwright.pay(new Order());
     // payIpc(link as string);
   };

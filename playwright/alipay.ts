@@ -8,6 +8,7 @@ import { AccountInfo } from "../api/router/account";
 import { dialog } from "electron";
 import { Order } from "../api/router/order";
 import { Queue } from "../utils/queue";
+import { BrowserContext } from "playwright-core";
 
 const cookie_pre = "account_";
 const loginUrl =
@@ -15,6 +16,33 @@ const loginUrl =
 
 const payUrl =
   "https://mclient.alipay.com/home/exterfaceAssign.htm?_input_charset=utf-8&subject=%E7%BE%8E%E5%9B%A2%E8%AE%A2%E5%8D%95-22121011100400000020023904849790&sign=Cquy8ejd31kfJ8rr19m45Cpt1NVH3HZmJ%2BmaW3mVQg%2BrQT1gwgu8osEmnmNBwsNlRlTjkgkRh71KQvyo4wvlAsNxDP1l1g6Wrv6S38HDGI4pLVSv%2FHx%2F8XH7hO0g4JfhHZ4DqKm6Yjmtsy%2FhZPBRhPATrRrZ%2BPvOd%2F%2FCty8pETI%3D&it_b_pay=60m&body=%E7%BE%8E%E5%9B%A2%E8%AE%A2%E5%8D%95-22121011100400000020023904849790&notify_url=http%3A%2F%2F10.110.162.16%3A8966%2Fexchange%2Fbank%2Fnotify%2F233%2Fpay_notify%2F363%2F412%2F103%2Fset111004%2Fbg0&alipay_exterface_invoke_assign_model=cashier&alipay_exterface_invoke_assign_target=mapi_direct_trade.htm&payment_type=1&out_trade_no=20221210144955U92292726253010579&partner=2088311465207164&alipay_exterface_invoke_assign_sign=_t_p6pb_qo_f5_ykz_tx9k_f_m1d_rp_mkuu_m_qj_t_z_q_ykrf_x59_a_w7_tn_l_y_cm5_g_wzfg%3D%3D&service=alipay.wap.create.direct.pay.by.user&total_fee=6.90&return_url=https%3A%2F%2Fmeishi.meituan.com%2Fi%2Forder%2Fresult%2F4899946422690960457%3F&sign_type=RSA&seller_id=2088311465207164&alipay_exterface_invoke_assign_client_ip=111.227.101.227";
+
+enum ErrorEnum {
+  No_Money = 0,
+  No_Pay_Way = 1,
+  System_Error = 2,
+  SMS = 3,
+  Not_Login = 4
+}
+
+interface ErrorMsg {
+  reason: ErrorEnum;
+  message: string;
+  context: PlayWrightContext;
+}
+
+interface PlayWrightContext {
+  browserContext: BrowserContext;
+  page: Page;
+  timeout: number;
+  order: Order;
+  account: AccountInfo;
+}
+
+interface PayResult {
+  success: boolean;
+  amountStr: string;
+}
 
 export class AlipayPlayWright {
   private static instance: AlipayPlayWright | undefined;
@@ -33,6 +61,7 @@ export class AlipayPlayWright {
   private defer: Deferred<Browser> | undefined;
   private queue: Order[] = [];
   private hasFreeAccount: boolean = true;
+  private isRunning = false;
 
   private async launchPlaywright(): Promise<Browser> {
     if (this.defer) {
@@ -73,7 +102,7 @@ export class AlipayPlayWright {
 
         const content = await page.content();
         if (content.match("账号不存在")) {
-          await this.invalidUser(id);
+          await this.invalidUser(id, "帐号不存在");
           await context.close();
           return;
         } else if (content.match("输入短信验证码")) {
@@ -88,7 +117,7 @@ export class AlipayPlayWright {
           const finalStepContent = await page.content();
 
           if (finalStepContent.match("支付密码不正确")) {
-            await this.invalidUser(id);
+            await this.invalidUser(id, "支付密码不正确");
           } else {
             // save cookie
             const cookies = await context.cookies();
@@ -115,108 +144,334 @@ export class AlipayPlayWright {
   }
 
   public async addTasks(orders: Order[]): Promise<void> {
-    console.error("addTask", orders);
     orders.map((item) => {
       this.queue.push(item);
     });
     await this.runTask();
   }
 
-  private async runTask() {
+  private async runTask(): Promise<void> {
     if (!this.hasFreeAccount) {
       return;
     }
 
-    while (this.queue.length > 0) {
-      const accounts = await this.loadUsers();
-      const account = accounts.find(
-        (account) =>
-          account.isLogin &&
-          account.valid &&
-          account.workState === WorkState.ON_CALL
-      );
+    if (this.isRunning) {
+      return;
+    }
 
-      console.error(1111, this.queue, account);
-      if (!account) {
-        this.hasFreeAccount = false;
-        return;
-      }
+    const accounts = await this.loadUsers();
+    const validAccounts = accounts.filter((account: AccountInfo) =>(
+      account.isLogin &&
+      account.valid &&
+      account.workState === WorkState.ON_CALL)
+    )
+
+    if (validAccounts.length === 0) {
+      this.hasFreeAccount = false;
+      return;
+    }
+
+    if (this.queue.length === 0) {
+      this.isRunning = false;
+      return;
+    }
+
+    this.isRunning = true;
+
+    await Promise.all(validAccounts.map(async (item) => {
       const order = this.queue.shift();
-
-      if (order && account) {
-        this.pay(order, account).finally(async () => {
+      if (order && item) {
+        this.pay(order, item).finally(async () => {
           this.hasFreeAccount = true;
+          this.isRunning = false;
           await AccountStateManager.getInstance().accountToOnCall(
-            account.account
+            item.account
           );
           await this.runTask();
         });
+      } else {
+        this.isRunning = false;
+        this.hasFreeAccount = true;
+        await this.runTask();
       }
-    }
+    })).finally(async ()=>{
+      this.isRunning = false;
+      this.hasFreeAccount = true;
+      await this.runTask();
+
+    })
   }
 
-  public async pay(order: Order, account: AccountInfo): Promise<void> {
-    await AccountStateManager.getInstance().accountToWork(account.account);
-    const browser = await this.launchPlaywright();
-    if (account && order && order.payUrl) {
-      const context = await browser.newContext(devices["iPhone 13"]);
-      await context.clearCookies();
-      const cookies = await this.loadCookies(account.account);
-      await context.addCookies(cookies);
-      const page = await context.newPage();
+  public async pay(order: Order, account: AccountInfo): Promise<PayResult> {
+    return new Promise(async (resolve, reject) => {
+      await AccountStateManager.getInstance().accountToWork(account.account);
+      const browser = await this.launchPlaywright();
+      if (account && order && order.payUrl) {
+        const context = await browser.newContext(devices["iPhone 13"]);
+        await context.clearCookies();
+        const cookies = await this.loadCookies(account.account);
+        await context.addCookies(cookies);
+        const page = await context.newPage();
+        console.error("entered");
 
-      await page.goto(order.payUrl, {
-        timeout: 1000,
-        waitUntil: "domcontentloaded",
-      });
-      await page.locator('a:has-text("继续浏览器付款")').click({});
+        await page.goto(order.payUrl, {
+          timeout: 1000,
+          waitUntil: "domcontentloaded",
+        });
 
-      const content = await page.content();
-      if (content.match("付款方式")) {
-        if (content.match(/确认交易|确认付款/)) {
-          await page
-            .locator("button[seed=v5_cashier_pre_confirm-submit]")
-            .first()
-            .click();
-        }
-        if ((await page.content()).match("输入支付密码")) {
-          console.error(3333, account.password);
-          await page.type("#pwd_unencrypt", account.password, {
-            delay: 100,
-          });
+        const playwrightContext: PlayWrightContext = {
+          browserContext: context,
+          page,
+          timeout: 500,
+          order,
+          account,
+        };
+        await this.click(playwrightContext, ".h5RouteAppSenior__h5pay")
+          .catch((ex) => {
+            reject(ex);
+          })
+          .finally(async () => {
 
-          // 长密码还要手动点一下「确定」
-          if (!account.isShort) {
-            await page
-              .locator(
-                ".J-pwdValidate button[seed=v5_cashier_pre_confirm-submit]"
-              )
-              .click();
-          } else {
-            await page.waitForNavigation();
-          }
-          const finalContent = await page.content();
-          if (finalContent.match("校验码")) {
-            console.error("校验码");
-            await dialog
-              .showMessageBox({
-                type: "warning", //弹出框类型
-                title: "提示",
-                message: "请输入验证码",
-                buttons: ["知道了"],
+            await this.click(playwrightContext, ".cashierPreConfirm__btn")
+              .then(async () => {
+                if (!account.isShort) {
+                  await this.type(
+                    playwrightContext,
+                    ".adm-input-element",
+                    account.password
+                  );
+                  await this.click(playwrightContext, ".pwdValidate__btn");
+                } else {
+                  await this.type(
+                    playwrightContext,
+                    ".my-passcode-input-native-input",
+                    account.password
+                  );
+                }
+
+                try {
+                  await this.locate(
+                    playwrightContext,
+                    ".cashierActivity__finishBtn",
+                    async () => {
+                      const moneySelector = await page.$(
+                        ".cashierActivity__content-money"
+                      );
+                      const result = {
+                        amountStr: (await moneySelector?.innerText()) ?? "0",
+                        success: true,
+                      };
+                      console.error("result is ", result);
+await page.close();
+                      await context.close();
+
+                      resolve(result);
+                    }
+                  );
+                } catch (ex) {
+                  console.error("catch error", ex);
+                  reject(ex);
+                }
               })
-              .then((res) => console.log(res));
-            // 需要告警
+              .catch((ex) => {
+                reject(ex);
+              });
+          });
+      }
+    });
+  }
+
+  private catchError(context: PlayWrightContext): Promise<ErrorMsg> {
+    return new Promise(async (resolve, reject) => {
+      const { page, timeout } = context;
+
+      try {
+        await page.waitForSelector(".my-adm-input__label", {
+          timeout,
+        });
+        resolve({reason: ErrorEnum.Not_Login, message: "未登录", context})
+      } catch (ex) {}
+
+
+
+      try {
+        await page.waitForSelector(".adm-error-block-description-title", {
+          timeout,
+        });
+
+        const contentSelector = await page.$(
+          ".adm-error-block-description-title"
+        );
+        resolve({
+          reason: ErrorEnum.System_Error,
+          message: (await contentSelector?.innerText()) ?? "系统错误",
+          context,
+        });
+      } catch (ex) {}
+
+      try {
+        await page.waitForSelector(".adm-auto-center-content", {
+          timeout,
+        });
+
+        const contentSelector = await page.$(
+          ".adm-auto-center-content"
+        );
+        resolve({
+          reason: ErrorEnum.System_Error,
+          message: (await contentSelector?.innerText()) ?? "系统错误",
+          context,
+        });
+      } catch (ex) {}
+
+      try {
+        await page.waitForSelector(".channelWrap-warning__content--account", {
+          timeout,
+        });
+        resolve({
+          reason: ErrorEnum.No_Pay_Way,
+          message: "当前没有可以直接使用的付款方式",
+          context,
+        });
+      } catch (ex) {}
+
+      try {
+        await page.waitForSelector(".sms-verify__title", { timeout });
+        resolve({
+          reason: ErrorEnum.SMS,
+          message: "需要输入验证码",
+          context,
+        });
+      } catch (ex) {}
+
+      try {
+        await page.waitForSelector(".channelWrap-warning__content", {
+          timeout,
+        });
+        resolve({
+          reason: ErrorEnum.No_Money,
+          message: "没有余额了",
+          context,
+        });
+      } catch (ex) {}
+
+      reject();
+    });
+  }
+
+  private async click(
+    context: PlayWrightContext,
+    selector: string
+  ): Promise<Boolean> {
+    return new Promise((resolve, reject) => {
+      const { page, timeout } = context;
+      this.catchError(context)
+        .then((res) => {
+          this.handleError(context, res);
+          reject(res);
+        })
+        .catch(async () => {
+          try {
+            await page.waitForSelector(selector, { timeout });
+            await page.locator(selector).click();
+            resolve(true);
+          } catch (ex) {
+            reject(ex);
           }
-        }
-      } else {
-        await page.type("#pwd_unencrypt", account.password, {
+        });
+    });
+  }
+
+  private async locate(
+    context: PlayWrightContext,
+    selector: string,
+    callback?: () => void
+  ): Promise<Boolean> {
+    return new Promise((resolve, reject) => {
+      const { page, timeout } = context;
+      this.catchError(context)
+        .then((res) => {
+          this.handleError(context, res);
+          reject(res);
+        })
+        .catch(async () => {
+          try {
+            await page.waitForSelector(selector, { timeout });
+            callback && callback();
+            resolve(true);
+          } catch (ex) {
+            reject(ex);
+          }
+        });
+    });
+  }
+
+  private async type(
+    context: PlayWrightContext,
+    selector: string,
+    word: string
+  ): Promise<Boolean> {
+    return new Promise(async (resolve, reject) => {
+      const { page } = context;
+
+      try {
+        await page.type(selector, word, {
           delay: 100,
         });
-        if (!account.isShort) {
-          await page.locator(" button[seed=-submit]").click();
-        }
+        this.catchError(context)
+          .then((res) => {
+            this.handleError(context, res);
+            reject(res);
+          })
+          .catch((ex) => {
+            resolve(true);
+          });
+      } catch (ex) {
+        reject(ex);
       }
+    });
+  }
+
+  private async handleError(
+    context: PlayWrightContext,
+    errorMsg: ErrorMsg
+  ): Promise<void> {
+    const { page, browserContext, account, order } = context;
+    const { reason, message } = errorMsg;
+    console.error(reason, message);
+    switch (reason) {
+      case ErrorEnum.SMS:
+        await dialog
+          .showMessageBox({
+            type: "warning", //弹出框类型
+            title: "提示",
+            message: "请输入验证码",
+            buttons: ["知道了"],
+          })
+          .then((res) => console.log(res));
+        // 需要告警
+        break;
+      case ErrorEnum.System_Error:
+        await page.close();
+        await browserContext.close();
+
+        break;
+      case ErrorEnum.No_Money:
+        await this.invalidUser(account.id, message);
+        await page.close();
+        await browserContext.close();
+        break;
+      case ErrorEnum.No_Pay_Way:
+        await this.invalidUser(account.id, message);
+        await page.close();
+        await browserContext.close();
+        break;
+
+      case ErrorEnum.Not_Login:
+        await this.login();
+        break;
+      default:
+        break;
     }
   }
 
@@ -226,7 +481,7 @@ export class AlipayPlayWright {
   }
 
   // 将用户加到黑名单中
-  private async invalidUser(id: number): Promise<void> {
+  private async invalidUser(id: number, reason: String): Promise<void> {
     return AccountMapper.getInstance(prisma).invalidUser(id);
   }
 

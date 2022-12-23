@@ -9,9 +9,9 @@ export const pageUrl =
     : new URL("../renderer/dist/index.html", "file://" + __dirname).toString();
 
 async function createWindow() {
-  const winW = electron.screen.getPrimaryDisplay().workAreaSize.width - 50;
+  const winW = 1920;
 
-  const winH = electron.screen.getPrimaryDisplay().workAreaSize.height - 50;
+  const winH = 1080;
 
   const browserWindow = new BrowserWindow({
     show: false,
@@ -42,7 +42,7 @@ async function createWindow() {
     // }
   });
 
-  console.error(pageUrl)
+  console.error(pageUrl);
   await browserWindow.loadURL(pageUrl);
 
   return browserWindow;
