@@ -1,5 +1,7 @@
 import builder from "electron-builder";
 
+const Platform = builder.Platform;
+
 if (process.env.VITE_APP_VERSION === undefined) {
   const now = new Date();
   process.env.VITE_APP_VERSION = `${now.getUTCFullYear() - 2000}.${
@@ -8,6 +10,9 @@ if (process.env.VITE_APP_VERSION === undefined) {
 }
 
 const config: builder.Configuration = {
+  win: {
+    target: "nsis",
+  },
   directories: {
     output: "dist",
     buildResources: "buildResources",
@@ -25,8 +30,8 @@ const config: builder.Configuration = {
 
 builder
   .build({
+    targets: Platform.WINDOWS.createTarget(),
     config,
-    dir: true,
   })
   .then((result) => {
     console.log(JSON.stringify(result));
