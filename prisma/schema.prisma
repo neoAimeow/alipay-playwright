@@ -16,7 +16,6 @@ model Account {
   password String
   isShort  Boolean       @default(true)
   valid    Boolean       @default(true)
-  orders   OrderRecord[]
   isEnterprise Boolean @default(false)
   version Int @default(0)
 }
@@ -34,8 +33,6 @@ model OrderRecord {
   id        Int     @id @default(autoincrement())
   accountId Int
   payment   Float
-  Account   Account @relation(fields: [accountId], references: [id])
-  version Int @default(0)
 }
 
 model Cache {

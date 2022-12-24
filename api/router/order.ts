@@ -1,18 +1,18 @@
 import { t } from "../context";
 import { z } from "zod";
-import request from "../../utils/axios";
+import getRequest from "../../utils/axios";
 import FormData from "form-data";
 import { TRPCError } from "@trpc/server";
 import { BaseResult } from "../types/common";
 import { CacheManager } from "../../utils/cache";
+import { uploadPayResult } from "../request/order";
 
 export interface Order {
-  kfcOrderId?: string;
+  kfcOrderId: string;
   payUrl?: string;
   isSuccess?: boolean;
   price?: number;
-  taobaoOrderId?: string;
-  id: number;
+  taobaoOrderId: string;
 }
 
 export const orderRouter = t.router({
@@ -29,9 +29,9 @@ export const orderRouter = t.router({
       (await CacheManager.getInstance(ctx.prisma).getStore("token")) ?? ""
     );
     form.append("params", "{}");
+    const request = await getRequest();
     const result = await request.post<BaseResult<Order[]>>("", form);
     const { code, data, message } = result.data;
-    console.error(123123, result.data);
     if (code != 0) {
       throw new TRPCError({
         code: "BAD_REQUEST",
@@ -52,26 +52,7 @@ export const orderRouter = t.router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const form = new FormData();
-      form.append("func", "payResult");
-      form.append(
-        "user",
-        (await CacheManager.getInstance(ctx.prisma).getStore("username")) ?? ""
-      );
-      form.append(
-        "token",
-        (await CacheManager.getInstance(ctx.prisma).getStore("token")) ?? ""
-      );
-      form.append(
-        "params",
-        JSON.stringify({
-          alipay: input.alipay,
-          orderId: input.orderId,
-          errorCode: input.errorCode,
-          errorMsg: input.errorMsg,
-        })
-      );
-      await request.post("", form);
+      await uploadPayResult(input);
       return true;
     }),
 });

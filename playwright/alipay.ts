@@ -9,6 +9,8 @@ import { dialog } from "electron";
 import { Order } from "../api/router/order";
 import { Queue } from "../utils/queue";
 import { BrowserContext } from "playwright-core";
+import { uploadPayResult } from "../api/request/order";
+import { OrderRecordMapper } from "../mapper/order-record.mapper";
 
 const cookie_pre = "account_";
 const loginUrl =
@@ -22,7 +24,7 @@ enum ErrorEnum {
   No_Pay_Way = 1,
   System_Error = 2,
   SMS = 3,
-  Not_Login = 4
+  Not_Login = 4,
 }
 
 interface ErrorMsg {
@@ -60,8 +62,8 @@ export class AlipayPlayWright {
 
   private defer: Deferred<Browser> | undefined;
   private queue: Order[] = [];
-  private hasFreeAccount: boolean = true;
   private isRunning = false;
+  private whiteList: string[] = [];
 
   private async launchPlaywright(): Promise<Browser> {
     if (this.defer) {
@@ -78,96 +80,103 @@ export class AlipayPlayWright {
     return browser;
   }
 
-  public async login(): Promise<void> {
-    const account = await this.loadUsers();
+  public async login(item: AccountInfo): Promise<void> {
     const browser = await this.launchPlaywright();
+    const id = item.id;
+    const username = item.account;
+    const password = item.password;
+    const isShort = item.isShort;
+    const context = await browser.newContext(devices["iPhone 13"]);
+    const page = await context.newPage();
+    await page.goto(loginUrl);
+
+    await page.locator(".h5RouteAppSenior__h5pay").click();
+    await page.locator(".adm-input-element").fill(username);
+    await page.locator("button:has-text('下一步')").click();
+
+    await page.waitForEvent("requestfinished");
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(1000);
+
+    const content = await page.content();
+    if (content.match("账号不存在")) {
+      await this.invalidUser(id, "帐号不存在");
+      await context.close();
+      return;
+    } else if (content.match("输入短信验证码")) {
+      await page.locator(".toAccountLoginWrap___2ir3r").click();
+      await page.waitForTimeout(1000);
+
+      await page.locator(".my-passcode-input-native-input").fill(password);
+
+      await page.locator(".adm-button-large").click();
+
+      await page.waitForTimeout(1000);
+      const finalStepContent = await page.content();
+
+      if (finalStepContent.match("支付密码不正确")) {
+        await this.invalidUser(id, "支付密码不正确");
+      } else {
+        // save cookie
+        const cookies = await context.cookies();
+        await this.saveCookies(username, cookies);
+        await context.close();
+      }
+    } else {
+      if (isShort) {
+        await page.locator(".my-passcode-input-native-input").fill(password);
+      } else {
+        await page.locator(".adm-input-element >> nth=1").fill(password);
+      }
+
+      await page.locator("button:has-text('下一步')").click();
+      // save cookie
+      const cookies = await context.cookies();
+      await this.saveCookies(username, cookies);
+      await context.close();
+    }
+  }
+
+  public async loginAll(): Promise<void> {
+    const account = await this.loadUsers();
 
     await Promise.all(
       account.map(async (item) => {
-        const id = item.id;
-        const username = item.account;
-        const password = item.password;
-        const isShort = item.isShort;
-        const context = await browser.newContext(devices["iPhone 13"]);
-        const page = await context.newPage();
-        await page.goto(loginUrl);
-
-        await page.locator(".h5RouteAppSenior__h5pay").click();
-        await page.locator(".adm-input-element").fill(username);
-        await page.locator("button:has-text('下一步')").click();
-
-        await page.waitForEvent("requestfinished");
-        await page.waitForLoadState("domcontentloaded");
-        await page.waitForTimeout(1000);
-
-        const content = await page.content();
-        if (content.match("账号不存在")) {
-          await this.invalidUser(id, "帐号不存在");
-          await context.close();
-          return;
-        } else if (content.match("输入短信验证码")) {
-          await page.locator(".toAccountLoginWrap___2ir3r").click();
-          await page.waitForTimeout(1000);
-
-          await page.locator(".my-passcode-input-native-input").fill(password);
-
-          await page.locator(".adm-button-large").click();
-
-          await page.waitForTimeout(1000);
-          const finalStepContent = await page.content();
-
-          if (finalStepContent.match("支付密码不正确")) {
-            await this.invalidUser(id, "支付密码不正确");
-          } else {
-            // save cookie
-            const cookies = await context.cookies();
-            await this.saveCookies(username, cookies);
-            await context.close();
-          }
-        } else {
-          if (isShort) {
-            await page
-              .locator(".my-passcode-input-native-input")
-              .fill(password);
-          } else {
-            await page.locator(".adm-input-element >> nth=1").fill(password);
-          }
-
-          await page.locator("button:has-text('下一步')").click();
-          // save cookie
-          const cookies = await context.cookies();
-          await this.saveCookies(username, cookies);
-          await context.close();
-        }
+        await this.login(item);
       })
     );
   }
 
   public async addTasks(orders: Order[]): Promise<void> {
+    console.error("addTasks", this.queue);
     orders.map((item) => {
-      this.queue.push(item);
+      const existOrder = this.whiteList.find(
+        (str: string) => str === item.kfcOrderId
+      );
+      if (!existOrder) {
+        this.queue.push(item);
+        this.whiteList.push(item.kfcOrderId);
+      }
     });
     await this.runTask();
   }
 
   private async runTask(): Promise<void> {
-    if (!this.hasFreeAccount) {
-      return;
-    }
+    console.error("runTask", this.isRunning);
 
     if (this.isRunning) {
       return;
     }
 
     const accounts = await this.loadUsers();
-    const validAccounts = accounts.filter((account: AccountInfo) =>(
-      account.isLogin &&
-      account.valid &&
-      account.workState === WorkState.ON_CALL)
-    )
+    const validAccounts = accounts.filter(
+      (account: AccountInfo) =>
+        account.isLogin &&
+        account.valid &&
+        account.workState === WorkState.ON_CALL
+    );
 
     if (validAccounts.length === 0) {
-      this.hasFreeAccount = false;
       return;
     }
 
@@ -178,32 +187,32 @@ export class AlipayPlayWright {
 
     this.isRunning = true;
 
-    await Promise.all(validAccounts.map(async (item) => {
-      const order = this.queue.shift();
-      if (order && item) {
-        this.pay(order, item).finally(async () => {
-          this.hasFreeAccount = true;
+    await Promise.all(
+      validAccounts.map(async (item) => {
+        const order = this.queue.shift();
+        if (order && item) {
+          this.pay(order, item).finally(async () => {
+            this.isRunning = false;
+            await AccountStateManager.getInstance().accountToOnCall(
+              item.account
+            );
+            await this.runTask();
+          });
+        } else {
           this.isRunning = false;
-          await AccountStateManager.getInstance().accountToOnCall(
-            item.account
-          );
           await this.runTask();
-        });
-      } else {
-        this.isRunning = false;
-        this.hasFreeAccount = true;
-        await this.runTask();
-      }
-    })).finally(async ()=>{
+        }
+      })
+    ).finally(async () => {
       this.isRunning = false;
-      this.hasFreeAccount = true;
       await this.runTask();
-
-    })
+    });
   }
 
   public async pay(order: Order, account: AccountInfo): Promise<PayResult> {
     return new Promise(async (resolve, reject) => {
+      console.error("pay", order, account);
+
       await AccountStateManager.getInstance().accountToWork(account.account);
       const browser = await this.launchPlaywright();
       if (account && order && order.payUrl) {
@@ -212,7 +221,6 @@ export class AlipayPlayWright {
         const cookies = await this.loadCookies(account.account);
         await context.addCookies(cookies);
         const page = await context.newPage();
-        console.error("entered");
 
         await page.goto(order.payUrl, {
           timeout: 1000,
@@ -226,12 +234,8 @@ export class AlipayPlayWright {
           order,
           account,
         };
-        await this.click(playwrightContext, ".h5RouteAppSenior__h5pay")
-          .catch((ex) => {
-            reject(ex);
-          })
-          .finally(async () => {
-
+        await this.click(playwrightContext, ".h5RouteAppSenior__h5pay").finally(
+          async () => {
             await this.click(playwrightContext, ".cashierPreConfirm__btn")
               .then(async () => {
                 if (!account.isShort) {
@@ -249,34 +253,45 @@ export class AlipayPlayWright {
                   );
                 }
 
-                try {
-                  await this.locate(
-                    playwrightContext,
-                    ".cashierActivity__finishBtn",
-                    async () => {
-                      const moneySelector = await page.$(
-                        ".cashierActivity__content-money"
-                      );
-                      const result = {
-                        amountStr: (await moneySelector?.innerText()) ?? "0",
-                        success: true,
-                      };
-                      console.error("result is ", result);
-await page.close();
-                      await context.close();
+                await this.locate(
+                  playwrightContext,
+                  ".cashierActivity__msg",
+                  async () => {
+                    const moneySelector = await page.$(
+                      ".cashierActivity__content-money--price"
+                    );
+                    const amountStr = (await moneySelector?.innerText()) ?? "0";
+                    console.error(
+                      "amountstr is ",
+                      amountStr,
+                      await moneySelector?.innerText(),
+                      Number(amountStr)
+                    );
+                    await OrderRecordMapper.getInstance(prisma).addRecord(
+                      account.id,
+                      Number(amountStr)
+                    );
+                    await this.reportSuccess(account, order);
+                    const result = {
+                      amountStr: (await moneySelector?.innerText()) ?? "0",
+                      success: true,
+                    };
+                    console.error("result is ", result);
+                    await page.close();
+                    await context.close();
 
-                      resolve(result);
-                    }
-                  );
-                } catch (ex) {
-                  console.error("catch error", ex);
-                  reject(ex);
-                }
+                    resolve(result);
+                  }
+                );
               })
-              .catch((ex) => {
+              .catch(async (ex) => {
+                await this.reportFailed(account, order, `${ex.message}`);
+                await page.close();
+                await context.close();
                 reject(ex);
               });
-          });
+          }
+        );
       }
     });
   }
@@ -285,14 +300,13 @@ await page.close();
     return new Promise(async (resolve, reject) => {
       const { page, timeout } = context;
 
+      // TODO: 优化耗时
       try {
         await page.waitForSelector(".my-adm-input__label", {
           timeout,
         });
-        resolve({reason: ErrorEnum.Not_Login, message: "未登录", context})
+        resolve({ reason: ErrorEnum.Not_Login, message: "未登录", context });
       } catch (ex) {}
-
-
 
       try {
         await page.waitForSelector(".adm-error-block-description-title", {
@@ -314,9 +328,7 @@ await page.close();
           timeout,
         });
 
-        const contentSelector = await page.$(
-          ".adm-auto-center-content"
-        );
+        const contentSelector = await page.$(".adm-auto-center-content");
         resolve({
           reason: ErrorEnum.System_Error,
           message: (await contentSelector?.innerText()) ?? "系统错误",
@@ -452,23 +464,15 @@ await page.close();
         // 需要告警
         break;
       case ErrorEnum.System_Error:
-        await page.close();
-        await browserContext.close();
-
         break;
       case ErrorEnum.No_Money:
         await this.invalidUser(account.id, message);
-        await page.close();
-        await browserContext.close();
         break;
       case ErrorEnum.No_Pay_Way:
         await this.invalidUser(account.id, message);
-        await page.close();
-        await browserContext.close();
         break;
-
       case ErrorEnum.Not_Login:
-        await this.login();
+        await this.loginAll();
         break;
       default:
         break;
@@ -498,5 +502,30 @@ await page.close();
       cookie_pre + account
     )) as string;
     return JSON.parse(data) as Cookie[];
+  }
+
+  private async reportSuccess(
+    account: AccountInfo,
+    order: Order
+  ): Promise<void> {
+    await uploadPayResult({
+      alipay: account.account,
+      errorCode: 0,
+      errorMsg: "支付成功",
+      orderId: `${order.kfcOrderId}`,
+    });
+  }
+
+  private async reportFailed(
+    account: AccountInfo,
+    order: Order,
+    errorMsg: string
+  ): Promise<void> {
+    await uploadPayResult({
+      alipay: account.account,
+      errorCode: -1,
+      errorMsg: `支付失败，错误内容：${errorMsg}`,
+      orderId: `${order.kfcOrderId}`,
+    });
   }
 }

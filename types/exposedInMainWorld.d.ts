@@ -3,7 +3,8 @@
 interface Window {
   readonly playwright: {
     pay: (orders: any[]) => void;
-    login: () => void;
+    loginAll: () => void;
+    login: (item: any) => void;
   };
 
   readonly electronTRPC: {

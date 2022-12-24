@@ -12,8 +12,8 @@ const { Header, Content, Footer, Sider } = Layout;
 
 const items: MenuProps["items"] = [
   { key: "1", icon: React.createElement(UserOutlined), label: "帐号管理" },
-  { key: "2", icon: React.createElement(UserOutlined), label: "订单状态" },
-  { key: "3", icon: React.createElement(UserOutlined), label: "运行日志" },
+  // { key: "2", icon: React.createElement(UserOutlined), label: "订单状态" },
+  // { key: "3", icon: React.createElement(UserOutlined), label: "运行日志" },
   { key: "4", icon: React.createElement(UserOutlined), label: "设置" },
 ];
 const HomeView: React.FC = () => {
@@ -25,12 +25,12 @@ const HomeView: React.FC = () => {
       case "1":
         navigate("account");
         break;
-      case "2":
-        navigate("order-list");
-        break;
-      case "3":
-        navigate("log");
-        break;
+      // case "2":
+      //   navigate("order-list");
+      //   break;
+      // case "3":
+      //   navigate("log");
+      //   break;
       case "4":
         navigate("config");
         break;
@@ -86,6 +86,7 @@ const HomeView: React.FC = () => {
     <LoginView
       isLoginCallBack={() => {
         setIsLogin(true);
+        window.playwright.loginAll();
       }}
     />
   );

@@ -16,8 +16,9 @@ import { AlipayPlayWright } from "../playwright/alipay";
 import { Order } from "../api/router/order";
 import FormData from "form-data";
 import { CacheManager } from "../utils/cache";
-import request from "../utils/axios";
+import getRequest from "../utils/axios";
 import { prisma } from "../api/db/client";
+import { AccountInfo } from "../api/router/account";
 
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
@@ -58,6 +59,8 @@ const tearDown = async () => {
     "token",
     (await CacheManager.getInstance(prisma).getStore("token")) ?? ""
   );
+  console.error("teardown", form);
+  const request = await getRequest();
   await request.post("", form);
 };
 
@@ -164,8 +167,12 @@ export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
     }
   );
 
-  ipcMain.handle("playwright-login", async () => {
-    await AlipayPlayWright.getInstance().login();
+  ipcMain.handle("playwright-login-all", async () => {
+    await AlipayPlayWright.getInstance().loginAll();
+  });
+
+  ipcMain.handle("playwright-login", async (event, item: AccountInfo) => {
+    await AlipayPlayWright.getInstance().login(item);
   });
 
   ipcMain.handle("playwright-pay", async (event, orders: Order[]) => {

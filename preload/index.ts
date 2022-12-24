@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { IpcRenderer, ContextBridge } from "electron";
 import type { IPCRequestOptions } from "../types";
 import { Order } from "../api/router/order";
+import { AccountInfo } from "../api/router/account";
 
 interface exposeType {
   contextBridge: ContextBridge;
@@ -23,7 +24,8 @@ export const exposePlaywright = ({
 }: exposeType) => {
   return contextBridge.exposeInMainWorld("playwright", {
     pay: (orders: Order[]) => ipcRenderer.invoke("playwright-pay", orders),
-    login: () => ipcRenderer.invoke("playwright-login"),
+    loginAll: () => ipcRenderer.invoke("playwright-login-all"),
+    login: (item: AccountInfo) => ipcRenderer.invoke("playwright-login", item),
   });
 };
 

@@ -9,7 +9,7 @@ interface LoginViewProps {
 
 const LoginView = (props: LoginViewProps) => {
   const { isLoginCallBack } = props;
-  const heartDownMutation = trpc.user.heartBeatDown.useMutation();
+  // const heartDownMutation = trpc.user.heartBeatDown.useMutation();
 
   const userContext = trpc.useContext().user;
 
@@ -23,7 +23,7 @@ const LoginView = (props: LoginViewProps) => {
   const heartBeatMutation = trpc.user.heartBeat.useMutation();
 
   const loginFunc = (usernameParam: string, passwordParam: string) => {
-    heartDownMutation.mutate();
+    // heartDownMutation.mutate();
 
     userContext.login
       .fetch({

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Button, Card, Checkbox, Form, Input, Tooltip } from "antd";
 import { trpc } from "../../../../utils/trpc";
 import { SystemConfig } from "../../../../api/types/config";
+import { useLocation } from "react-router-dom";
 
 interface NumericInputProps {
   style: React.CSSProperties;
@@ -60,17 +61,19 @@ const NumericInput = (props: NumericInputProps) => {
 const ConfigView: React.FC = () => {
   const [value, setValue] = useState("");
   const storeMutation = trpc.store.setStore.useMutation();
-  // const storeQuery = trpc.store.getStore.useQuery({ key: "system_config" });
-  // const [confg, setConfig] = useState<SystemConfig>({});
+  const deleteStoreMutation = trpc.store.delete.useMutation();
+  const heartDownMutation = trpc.user.heartBeatDown.useMutation();
+  const location = useLocation();
 
   const onFinish = (values: Record<string, number | string | boolean>) => {
-    const { timeoutDuration, isOpenSound } = values;
+    const { timeoutDuration, isOpenSound, hostUrl } = values;
     const config: SystemConfig = {
       timeoutDuration: timeoutDuration as number,
       isOpenSound: isOpenSound as boolean,
     };
     // setConfig(config);
     storeMutation.mutate({ key: "system_config", value: config });
+    storeMutation.mutate({ key: "base_url", value: hostUrl as string });
   };
 
   // const onLogout = () => {};
@@ -91,6 +94,10 @@ const ConfigView: React.FC = () => {
             />
           </Form.Item>
 
+          <Form.Item label="域名设置" name="hostUrl">
+            <Input name="hostUrl" style={{ width: 520 }} />
+          </Form.Item>
+
           <Form.Item name="isOpenSound" valuePropName="checked">
             <Checkbox>是否打开提示音</Checkbox>
           </Form.Item>
@@ -101,6 +108,22 @@ const ConfigView: React.FC = () => {
             </Button>
           </Form.Item>
         </Form>
+
+        <Button
+          type="primary"
+          htmlType="submit"
+          onClick={() => {
+            deleteStoreMutation.mutate({ key: "input_username" });
+            deleteStoreMutation.mutate({ key: "input_password" });
+            deleteStoreMutation.mutate({ key: "input_autoLogin" });
+            heartDownMutation.mutate();
+            deleteStoreMutation.mutate({ key: "userInfo" });
+            deleteStoreMutation.mutate({ key: "token" });
+            storeMutation.mutate({ key: "is_login", value: "false" });
+          }}
+        >
+          退出登录
+        </Button>
       </Card>
       {/*<Button*/}
       {/*  type="primary"*/}
