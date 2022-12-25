@@ -41,7 +41,7 @@ const HomeView: React.FC = () => {
       <Layout hasSider>
         <Sider
           theme="light"
-          width="300px"
+          width="150px"
           style={{
             overflow: "auto",
             height: "100vh",
@@ -52,7 +52,7 @@ const HomeView: React.FC = () => {
           }}
         >
           <div className="logo">
-            <img width="200" alt="logo" src={logo} />
+            <img width="100" alt="logo" src={logo} />
           </div>
           <Menu
             theme="light"
@@ -62,7 +62,7 @@ const HomeView: React.FC = () => {
             items={items}
           />
         </Sider>
-        <Layout className="site-layout" style={{ marginLeft: 300 }}>
+        <Layout className="site-layout" style={{ marginLeft: 150 }}>
           <Header
             className="site-layout-background"
             style={{ padding: 0, backgroundColor: "#ffffff" }}

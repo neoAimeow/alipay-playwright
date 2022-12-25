@@ -11,7 +11,7 @@ import LogView from "./pages/log-view/log-view";
 import ConfigView from "./pages/config-view/config-view";
 import OrderListView from "./pages/order/order-list-view";
 
-export const switchUrl = "http://rlaecyw7w.bkt.clouddn.com/switch.json";
+// export const switchUrl = "http://rlaecyw7w.bkt.clouddn.com/switch.json";
 
 function App() {
   const [queryClient] = useState(() => new QueryClient());
@@ -20,19 +20,19 @@ function App() {
       links: [ipcLink()],
     });
   });
-  const [valid, setValid] = useState(false);
+  // const [valid, setValid] = useState(false);
 
-  axios
-    .get(switchUrl)
-    .then((res: { data: { isAppValid: boolean } }) => {
-      const { isAppValid } = res.data;
-      setValid(isAppValid);
-    })
-    .catch(() => {
-      setValid(false);
-    });
+  // axios
+  //   .get(switchUrl)
+  //   .then((res: { data: { isAppValid: boolean } }) => {
+  //     const { isAppValid } = res.data;
+  //     setValid(isAppValid);
+  //   })
+  //   .catch(() => {
+  //     setValid(false);
+  //   });
 
-  return valid ? (
+  return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
         <Router>
@@ -50,8 +50,6 @@ function App() {
         </Router>
       </QueryClientProvider>
     </trpc.Provider>
-  ) : (
-    <div>该应用不可用。请联系开发者</div>
   );
 }
 

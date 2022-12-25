@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, Menu } from "electron";
 import { join } from "path";
 import { URL } from "url";
 import * as electron from "electron";
@@ -9,14 +9,15 @@ export const pageUrl =
     : new URL("../renderer/dist/index.html", "file://" + __dirname).toString();
 
 async function createWindow() {
-  const winW = 1920;
+  const winW = 900;
 
-  const winH = 1080;
+  const winH = 600;
 
   const browserWindow = new BrowserWindow({
     show: false,
     height: winH,
     width: winW,
+    // fullscreen: true,
     webPreferences: {
       allowRunningInsecureContent: false,
       enableBlinkFeatures: "",
@@ -30,19 +31,19 @@ async function createWindow() {
     },
   });
 
+  Menu.setApplicationMenu(null);
+
   browserWindow.on("ready-to-show", () => {
     browserWindow.show();
 
-    // if (import.meta.env.DEV) {
-    //   browserWindow.webContents.openDevTools();
-    //   browserWindow.webContents.on("devtools-opened", () => {
-    //     browserWindow.webContents.closeDevTools();
-    //   });
-    //
-    // }
+    if (import.meta.env.DEV) {
+      browserWindow.webContents.openDevTools();
+      // browserWindow.webContents.on("devtools-opened", () => {
+      //   browserWindow.webContents.closeDevTools();
+      // });
+    }
   });
 
-  console.error(pageUrl);
   await browserWindow.loadURL(pageUrl);
 
   return browserWindow;

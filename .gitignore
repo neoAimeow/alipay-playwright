@@ -1,4 +1,5 @@
 node_modules
+buildResources/ms-playwright-win/
 .env
 generated
 dist

@@ -41,7 +41,9 @@ const accountModal = (param: {
       <div>
         <Space direction="vertical" size="middle" style={{ display: "flex" }}>
           <Input
-            value={param.type === "create" ? "" : param.account?.account ?? ""}
+            placeholder={
+              param.type === "create" ? "" : param.account?.account ?? ""
+            }
             disabled={param.type !== "create"}
             onChange={({ target: { value } }) => {
               param.ref.current.account = value;
@@ -190,29 +192,9 @@ const AccountView: React.FC = () => {
             rowKey={(record: { id: number }) => `${record.id}`}
             style={{ marginTop: "20px" }}
           >
-            <Column title="id" dataIndex="id" key="id" width={50} />
+            <Column title="帐号" dataIndex="account" key="id" width={200} />
             <Column
-              title="支付宝帐号"
-              dataIndex="account"
-              key="id"
-              width={300}
-            />
-            <Column
-              title="是否为企业帐号"
-              dataIndex="isEnterprise"
-              width={150}
-              key="isEnterprise"
-              render={(record) => <div>{record ? "是" : "否"}</div>}
-            />
-            <Column
-              title="是否短密码"
-              dataIndex="isShort"
-              key="isShort"
-              width={120}
-              render={(record) => <div>{record ? "是" : "否"}</div>}
-            />
-            <Column
-              title="是否已登录"
+              title="是否登录"
               dataIndex="isLogin"
               key="isLogin"
               width={120}
@@ -226,15 +208,9 @@ const AccountView: React.FC = () => {
                 </div>
               )}
             />
-            <Column title="工作状态" dataIndex="state" key="name" width={120} />
+            <Column title="单数" dataIndex="count" key="count" width={120} />
             <Column
-              title="支付单数"
-              dataIndex="count"
-              key="count"
-              width={120}
-            />
-            <Column
-              title="支付金额"
+              title="金额"
               dataIndex="payment"
               key="payment"
               width={120}
@@ -245,80 +221,88 @@ const AccountView: React.FC = () => {
               key="id"
               render={(value, record) => (
                 <div>
-                  <Space>
-                    <Button
-                      onClick={() => {
-                        const invalidAccountMutate = async () => {
-                          await accountInvalidAccountMutation.mutateAsync({
-                            id: value as number,
-                          });
-                        };
-                        invalidAccountMutate()
-                          .then(() => {
-                            reloadData();
-                          })
-                          .catch((ex) => {
-                            console.error(ex);
-                          });
-                      }}
-                    >
-                      设为失效
-                    </Button>
-
-                    <Button
-                      onClick={() => {
-                        accountModal({
-                          ref: inputValueRef,
-                          type: "update",
-                          account: record as AccountInfo,
-                          onOk: (ref: AccountRef) => {
-                            const {
-                              password,
-                              isShort = false,
-                              isEnterprise = false,
-                            } = ref;
-                            if (password == "" || !password) {
-                              return;
-                            }
-                            accountUpdateMutation.mutate({
+                  <Space
+                    direction="vertical"
+                    size="middle"
+                    style={{ display: "flex" }}
+                  >
+                    <Space>
+                      <Button
+                        onClick={() => {
+                          const invalidAccountMutate = async () => {
+                            await accountInvalidAccountMutation.mutateAsync({
                               id: value as number,
-                              password: password,
-                              isShort: isShort,
-                              isEnterprise: isEnterprise,
                             });
-                          },
-                        });
-                      }}
-                    >
-                      编辑
-                    </Button>
+                          };
+                          invalidAccountMutate()
+                            .then(() => {
+                              reloadData();
+                            })
+                            .catch((ex) => {
+                              console.error(ex);
+                            });
+                        }}
+                      >
+                        设为失效
+                      </Button>
 
-                    <Button
-                      onClick={() => {
-                        window.playwright.login(record as AccountInfo);
-                      }}
-                    >
-                      登录
-                    </Button>
+                      <Button
+                        onClick={() => {
+                          accountModal({
+                            ref: inputValueRef,
+                            type: "update",
+                            account: record as AccountInfo,
+                            onOk: (ref: AccountRef) => {
+                              const {
+                                password,
+                                isShort = false,
+                                isEnterprise = false,
+                              } = ref;
+                              if (password == "" || !password) {
+                                return;
+                              }
+                              accountUpdateMutation.mutate({
+                                id: value as number,
+                                password: password,
+                                isShort: isShort,
+                                isEnterprise: isEnterprise,
+                              });
+                            },
+                          });
+                        }}
+                      >
+                        编辑
+                      </Button>
+                    </Space>
 
-                    <Button
-                      onClick={() => {
-                        const disableMutate = async () => {
-                          await accountDisableMutation.mutateAsync({
-                            account: value as string,
-                          });
-                        };
-                        disableMutate()
-                          .then(() => {
-                            reloadData();
-                          })
-                          .catch((ex) => {
-                            console.error(ex);
-                          });
-                      }}
-                    >
-                      删除帐号
-                    </Button>
+                    <Space>
+                      <Button
+                        onClick={() => {
+                          window.playwright.login(record as AccountInfo);
+                        }}
+                      >
+                        登录
+                      </Button>
+
+                      <Button
+                        onClick={() => {
+                          const disableMutate = async () => {
+                            await accountDisableMutation.mutateAsync({
+                              account: value as string,
+                            });
+                          };
+                          disableMutate()
+                            .then(() => {
+                              reloadData();
+                            })
+                            .catch((ex) => {
+                              console.error(ex);
+                            });
+                        }}
+                      >
+                        删除帐号
+                      </Button>
+                    </Space>
                   </Space>
                 </div>
               )}
@@ -326,39 +310,39 @@ const AccountView: React.FC = () => {
           </Table>
         </Card>
 
-        <Card title="订单列表" bordered={false} style={{ width: "100%" }}>
-          <Table
-            key="kfcOrderId"
-            dataSource={orders}
-            rowKey={(record: { kfcOrderId: string | undefined }) =>
-              `${record.kfcOrderId}`
-            }
-            style={{ marginTop: "20px" }}
-          >
-            <Column
-              title="kfcOrderId"
-              dataIndex="kfcOrderId"
-              key="kfcOrderId"
-              width={50}
-            />
-            <Column
-              title="taobaoOrderId"
-              dataIndex="taobaoOrderId"
-              key="taobaoOrderId"
-              width={300}
-            />
-            <Column
-              title="支付链接"
-              dataIndex="payUrl"
-              key="payUrl"
-              render={(value) => (
-                <div>
-                  <a href={value as string}>支付链接</a>
-                </div>
-              )}
-            />
-          </Table>
-        </Card>
+        {/*<Card title="订单列表" bordered={false} style={{ width: "100%" }}>*/}
+        {/*  <Table*/}
+        {/*    key="kfcOrderId"*/}
+        {/*    dataSource={orders}*/}
+        {/*    rowKey={(record: { kfcOrderId: string | undefined }) =>*/}
+        {/*      `${record.kfcOrderId}`*/}
+        {/*    }*/}
+        {/*    style={{ marginTop: "20px" }}*/}
+        {/*  >*/}
+        {/*    <Column*/}
+        {/*      title="kfcOrderId"*/}
+        {/*      dataIndex="kfcOrderId"*/}
+        {/*      key="kfcOrderId"*/}
+        {/*      width={50}*/}
+        {/*    />*/}
+        {/*    <Column*/}
+        {/*      title="taobaoOrderId"*/}
+        {/*      dataIndex="taobaoOrderId"*/}
+        {/*      key="taobaoOrderId"*/}
+        {/*      width={300}*/}
+        {/*    />*/}
+        {/*    <Column*/}
+        {/*      title="支付链接"*/}
+        {/*      dataIndex="payUrl"*/}
+        {/*      key="payUrl"*/}
+        {/*      render={(value) => (*/}
+        {/*        <div>*/}
+        {/*          <a href={value as string}>支付链接</a>*/}
+        {/*        </div>*/}
+        {/*      )}*/}
+        {/*    />*/}
+        {/*  </Table>*/}
+        {/*</Card>*/}
 
         <Card title="失效帐号" bordered={false} style={{ width: "100%" }}>
           <Table
@@ -367,7 +351,7 @@ const AccountView: React.FC = () => {
             rowKey={(record: { id: number }) => `${record.id}`}
             style={{ marginTop: "20px" }}
           >
-            <Column title="id" dataIndex="id" key="id" width={50} />
+            {/*<Column title="id" dataIndex="id" key="id" width={50} />*/}
             <Column
               title="支付宝帐号"
               dataIndex="account"

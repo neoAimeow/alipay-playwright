@@ -66,14 +66,13 @@ const ConfigView: React.FC = () => {
   const location = useLocation();
 
   const onFinish = (values: Record<string, number | string | boolean>) => {
-    const { timeoutDuration, isOpenSound, hostUrl } = values;
+    const { timeoutDuration, isOpenSound } = values;
     const config: SystemConfig = {
       timeoutDuration: timeoutDuration as number,
       isOpenSound: isOpenSound as boolean,
     };
     // setConfig(config);
     storeMutation.mutate({ key: "system_config", value: config });
-    storeMutation.mutate({ key: "base_url", value: hostUrl as string });
   };
 
   // const onLogout = () => {};
@@ -92,10 +91,6 @@ const ConfigView: React.FC = () => {
               value={value}
               onChange={setValue}
             />
-          </Form.Item>
-
-          <Form.Item label="域名设置" name="hostUrl">
-            <Input name="hostUrl" style={{ width: 520 }} />
           </Form.Item>
 
           <Form.Item name="isOpenSound" valuePropName="checked">

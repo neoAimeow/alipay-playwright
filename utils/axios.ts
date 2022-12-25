@@ -2,10 +2,11 @@ import axios from "axios";
 import { CacheManager } from "./cache";
 import { prisma } from "../api/db/client";
 
+export const defaultUrl = "https://shanghai.128mb.cn/flask/api";
+
 async function getBaseUrl(): Promise<string> {
   const url =
-    (await CacheManager.getInstance(prisma).getStore("base_url")) ??
-    "https://shanghai.128mb.cn/flask/api";
+    (await CacheManager.getInstance(prisma).getStore("base_url")) ?? defaultUrl;
   console.error("url: ", url);
   return url as string;
 }
