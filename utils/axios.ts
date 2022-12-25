@@ -1,8 +1,7 @@
 import axios from "axios";
 import { CacheManager } from "./cache";
 import { prisma } from "../api/db/client";
-
-export const defaultUrl = "https://shanghai.128mb.cn/flask/api";
+import { defaultUrl } from "./type";
 
 async function getBaseUrl(): Promise<string> {
   const url =

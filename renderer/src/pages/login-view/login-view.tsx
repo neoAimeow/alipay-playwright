@@ -2,14 +2,11 @@ import React, { useEffect, useRef, useState } from "react";
 import { Button, Card, Checkbox, Form, Input, Modal, Space } from "antd";
 import { trpc } from "../../../../utils/trpc";
 import { TRPCError } from "@trpc/server";
-import {
-  PlusOutlined,
-  PlaySquareOutlined,
-  FormOutlined,
-} from "@ant-design/icons";
+import { FormOutlined } from "@ant-design/icons";
+import { defaultUrl } from "../../../../utils/type";
 
 interface ModelRef {
-  hostUrl: string;
+  hostUrl?: string;
 }
 
 const showModal = (param: {
@@ -65,17 +62,14 @@ interface LoginViewProps {
 }
 
 const LoginView = (props: LoginViewProps) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
   const { isLoginCallBack } = props;
-  // const heartDownMutation = trpc.user.heartBeatDown.useMutation();
   const inputValueRef = useRef<ModelRef>({});
 
   const userContext = trpc.useContext().user;
+  const storeContext = trpc.useContext().store;
 
   const userNameQuery = trpc.store.getStore.useQuery({ key: "input_username" });
   const passwordQuery = trpc.store.getStore.useQuery({ key: "input_password" });
-  const hostUrlQuery = trpc.store.getStore.useQuery({ key: "base_url" });
   const autoLoginQuery = trpc.store.getStore.useQuery({
     key: "input_autoLogin",
   });
@@ -84,8 +78,6 @@ const LoginView = (props: LoginViewProps) => {
   const heartBeatMutation = trpc.user.heartBeat.useMutation();
 
   const loginFunc = (usernameParam: string, passwordParam: string) => {
-    // heartDownMutation.mutate();
-
     userContext.login
       .fetch({
         username: usernameParam,
@@ -200,14 +192,16 @@ const LoginView = (props: LoginViewProps) => {
         <Button
           // type="primary"
           style={{ width: "100%", height: "45px", marginTop: "50px" }}
-          onClick={() => {
-            console.error("showModal");
+          onClick={async () => {
+            const url = await storeContext.getStore.fetch({ key: "base_url" });
+            console.error("showModal", url);
+
             showModal({
               ref: inputValueRef,
-              hostUrl: hostUrlQuery.data,
+              hostUrl: url as string,
               onOk: (url) => {
-                storeMutation.mutate({ key: "base_url", value: url });
-                hostUrlQuery.refresh();
+                const { hostUrl } = url;
+                storeMutation.mutate({ key: "base_url", value: hostUrl });
               },
             });
           }}
