@@ -17,12 +17,11 @@ import { trpc } from "../../../../utils/trpc";
 import { AccountInfo } from "../../../../api/router/account";
 import { Order } from "../../../../api/router/order";
 import useIntervalAsync from "../../../../utils/use-interval";
+import { containsOnlyNumber } from "../../../../utils/string-util";
 
 interface AccountRef {
   account?: string;
   password?: string;
-  isShort?: boolean;
-  isEnterprise?: boolean;
 }
 
 const accountModal = (param: {
@@ -54,23 +53,6 @@ const accountModal = (param: {
               param.ref.current.password = value;
             }}
           />
-          <Space>
-            <Checkbox
-              onChange={({ target: { value } }) => {
-                param.ref.current.isShort = value as boolean;
-              }}
-            >
-              是否为短密码
-            </Checkbox>
-            <Checkbox
-              onChange={({ target: { value } }) => {
-                console.error(value);
-                param.ref.current.isEnterprise = value as boolean;
-              }}
-            >
-              是否为企业帐号
-            </Checkbox>
-          </Space>
         </Space>
       </div>
     ),
@@ -134,12 +116,7 @@ const AccountView: React.FC = () => {
                   ref: inputValueRef,
                   type: "create",
                   onOk: (ref: AccountRef) => {
-                    const {
-                      account,
-                      password,
-                      isShort = false,
-                      isEnterprise = false,
-                    } = ref;
+                    const { account, password } = ref;
                     if (
                       !account ||
                       account == "" ||
@@ -148,11 +125,14 @@ const AccountView: React.FC = () => {
                     ) {
                       return;
                     }
+
+                    const isShort =
+                      containsOnlyNumber(password) && password.length === 6;
+
                     accountAddMutation.mutate({
                       account: account,
                       password: password,
                       isShort: isShort,
-                      isEnterprise: isEnterprise,
                     });
                   },
                 });
@@ -253,19 +233,18 @@ const AccountView: React.FC = () => {
                             type: "update",
                             account: record as AccountInfo,
                             onOk: (ref: AccountRef) => {
-                              const {
-                                password,
-                                isShort = false,
-                                isEnterprise = false,
-                              } = ref;
+                              const { password } = ref;
                               if (password == "" || !password) {
                                 return;
                               }
+                              const isShort =
+                                containsOnlyNumber(password) &&
+                                password.length === 6;
+
                               accountUpdateMutation.mutate({
                                 id: value as number,
                                 password: password,
                                 isShort: isShort,
-                                isEnterprise: isEnterprise,
                               });
                             },
                           });

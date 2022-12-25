@@ -28,7 +28,7 @@ export class AccountMapper {
 
   public async getValidAccount(): Promise<AccountInfo[]> {
     const accounts = await this.prisma.account.findMany({
-      where: { valid: true},
+      where: { valid: true },
     });
     const arr = AccountStateManager.getInstance().getLoginUserList();
     const results: AccountInfo[] = [];
@@ -37,22 +37,27 @@ export class AccountMapper {
       AccountStateManager.getInstance().addAccount(item.account);
     });
 
-    await Promise.all(accounts.map(async (item) => {
-      const accountInfo: AccountInfo = { ...item };
-      accountInfo.isLogin = arr.some((element) =>
-        isEqual(element, item.account)
-      );
-      const accountState = AccountStateManager.getInstance().getAccountState(
-        item.account
-      );
-      accountInfo.workState = accountState?.workState;
+    await Promise.all(
+      accounts.map(async (item) => {
+        const accountInfo: AccountInfo = { ...item };
+        accountInfo.isLogin = arr.some((element) =>
+          isEqual(element, item.account)
+        );
+        const accountState = AccountStateManager.getInstance().getAccountState(
+          item.account
+        );
+        accountInfo.workState = accountState?.workState;
 
-      const paymentInfo: {count:number; payment:number} = await OrderRecordMapper.getInstance(this.prisma).getPaymentInfoWithAccountId(item.id);
-      accountInfo.count = paymentInfo.count
-      accountInfo.payment = paymentInfo.payment
+        const paymentInfo: { count: number; payment: number } =
+          await OrderRecordMapper.getInstance(
+            this.prisma
+          ).getPaymentInfoWithAccountId(item.id);
+        accountInfo.count = paymentInfo.count;
+        accountInfo.payment = paymentInfo.payment;
 
-      results.push(accountInfo);
-    }))
+        results.push(accountInfo);
+      })
+    );
 
     return results;
   }
@@ -70,15 +75,13 @@ export class AccountMapper {
   public async add(
     account: string,
     password: string,
-    isShort: boolean,
-    isEnterprise: boolean
+    isShort: boolean
   ): Promise<void> {
     await this.prisma.account.create({
       data: {
         account: account,
         password: password,
         isShort: isShort,
-        isEnterprise: isEnterprise,
         valid: true,
       },
     });
@@ -87,20 +90,17 @@ export class AccountMapper {
   public async update(
     id: number,
     password: string,
-    isShort: boolean,
-    isEnterprise: boolean
+    isShort: boolean
   ): Promise<void> {
     await this.prisma.account.update({
       data: {
         password: password,
         isShort: isShort,
-        isEnterprise: isEnterprise,
         valid: true,
       },
-      where: {id:id}
+      where: { id: id },
     });
   }
-
 
   public async remove(id: number): Promise<void> {
     await this.prisma.account.delete({ where: { id: id } });
@@ -158,15 +158,13 @@ export class AccountMapper {
           account: data.account,
           password: data.password,
           isShort: data.isShort,
-          isEnterprise: data.isEnterprise
-        }
-      })
-      const deletePrism = this.prisma.account.delete({where:{id:data.id}})
+        },
+      });
+      const deletePrism = this.prisma.account.delete({
+        where: { id: data.id },
+      });
 
-
-      await  this.prisma.$transaction([
-        createPrism, deletePrism,
-      ])
+      await this.prisma.$transaction([createPrism, deletePrism]);
     }
   }
 }

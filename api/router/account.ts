@@ -12,7 +12,7 @@ export interface AccountInfo extends Account {
   isLogin?: boolean;
   workState?: WorkState;
   count?: number;
-  payment?:number;
+  payment?: number;
 }
 
 export const accountRouter = t.router({
@@ -30,15 +30,13 @@ export const accountRouter = t.router({
         account: z.string(),
         password: z.string(),
         isShort: z.boolean(),
-        isEnterprise: z.boolean(),
       })
     )
     .mutation(({ ctx, input }) => {
       return AccountMapper.getInstance(ctx.prisma).add(
         input.account,
         input.password,
-        input.isShort,
-        input.isEnterprise
+        input.isShort
       );
     }),
 
@@ -48,15 +46,13 @@ export const accountRouter = t.router({
         id: z.number(),
         password: z.string(),
         isShort: z.boolean(),
-        isEnterprise: z.boolean(),
       })
     )
     .mutation(({ ctx, input }) => {
       return AccountMapper.getInstance(ctx.prisma).update(
         input.id,
         input.password,
-        input.isShort,
-        input.isEnterprise
+        input.isShort
       );
     }),
 
@@ -99,7 +95,9 @@ export const accountRouter = t.router({
   disableAccount: t.procedure
     .input(z.object({ account: z.string() }))
     .mutation(({ ctx, input }) => {
-      return AccountMapper.getInstance(ctx.prisma).disableAccount(input.account);
+      return AccountMapper.getInstance(ctx.prisma).disableAccount(
+        input.account
+      );
     }),
 
   accountToWork: t.procedure
