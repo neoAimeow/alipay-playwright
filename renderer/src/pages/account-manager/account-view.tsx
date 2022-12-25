@@ -171,13 +171,15 @@ const AccountView: React.FC = () => {
             dataSource={accounts}
             rowKey={(record: { id: number }) => `${record.id}`}
             style={{ marginTop: "20px" }}
+
           >
-            <Column title="帐号" dataIndex="account" key="id" width={200} />
+            <Column title="帐号" dataIndex="account" key="id" width={200} align="center" />
             <Column
               title="是否登录"
               dataIndex="isLogin"
               key="isLogin"
               width={120}
+              align="center"
               render={(record) => (
                 <div>
                   {record ? (
@@ -188,17 +190,20 @@ const AccountView: React.FC = () => {
                 </div>
               )}
             />
-            <Column title="单数" dataIndex="count" key="count" width={120} />
+            <Column title="单数" dataIndex="count" key="count" width={120}
+                    align="center" />
             <Column
               title="金额"
               dataIndex="payment"
               key="payment"
               width={120}
+              align="center"
             />
             <Column
               title="操作"
               dataIndex="id"
               key="id"
+              align="center"
               render={(value, record) => (
                 <div>
                   <Space
@@ -334,12 +339,14 @@ const AccountView: React.FC = () => {
             <Column
               title="支付宝帐号"
               dataIndex="account"
+              align="center"
               key="id"
               width={300}
             />
             <Column
               title="操作"
               dataIndex="account"
+              align="center"
               key="account"
               render={(value) => (
                 <div>
