@@ -68,12 +68,19 @@ export class AlipayPlayWright {
     }
     this.defer = promiseDefer<Browser>();
 
-    let executablePathObj: {executablePath?: string} = {}
+    let executablePathObj: { executablePath?: string } = {};
 
-    if (process.platform !== 'darwin') {
-      executablePathObj.executablePath = process.env.NODE_ENV === "development"
-        ? path.join(process.cwd(), "buildResources/ms-playwright-win/chrome.exe")
-        : path.join(process.resourcesPath, "buildResources/ms-playwright-win/chrome.exe");
+    if (process.platform !== "darwin") {
+      executablePathObj.executablePath =
+        process.env.NODE_ENV === "development"
+          ? path.join(
+              process.cwd(),
+              "buildResources/ms-playwright-win/chrome.exe"
+            )
+          : path.join(
+              process.resourcesPath,
+              "buildResources/ms-playwright-win/chrome.exe"
+            );
     }
 
     const browser = await chromium.launch({
@@ -237,7 +244,7 @@ export class AlipayPlayWright {
         const playwrightContext: PlayWrightContext = {
           browserContext: context,
           page,
-          timeout: 500,
+          timeout: 3000,
           order,
           account,
         };
@@ -307,73 +314,62 @@ export class AlipayPlayWright {
     return new Promise(async (resolve, reject) => {
       const { page, timeout } = context;
 
+      await page.waitForTimeout(800);
+
       // TODO: 优化耗时
       try {
-        await page.waitForSelector(".my-adm-input__label", {
-          timeout,
-        });
-        resolve({ reason: ErrorEnum.Not_Login, message: "未登录", context });
+        const selector = await page.$(".my-adm-input__label");
+        if (selector) {
+          resolve({ reason: ErrorEnum.Not_Login, message: "未登录", context });
+        }
       } catch (ex) {}
 
       try {
-        await page.waitForSelector(".adm-error-block-description-title", {
-          timeout,
-        });
+        const selector = await page.$(".adm-error-block-description-title");
 
-        const contentSelector = await page.$(
-          ".adm-error-block-description-title"
-        );
-        resolve({
-          reason: ErrorEnum.System_Error,
-          message: (await contentSelector?.innerText()) ?? "系统错误",
-          context,
-        });
+        if (selector) {
+          resolve({
+            reason: ErrorEnum.System_Error,
+            message: (await selector?.innerText()) ?? "系统错误",
+            context,
+          });
+        }
       } catch (ex) {}
 
       try {
-        await page.waitForSelector(".adm-auto-center-content", {
-          timeout,
-        });
-
-        const contentSelector = await page.$(".adm-auto-center-content");
-        resolve({
-          reason: ErrorEnum.System_Error,
-          message: (await contentSelector?.innerText()) ?? "系统错误",
-          context,
-        });
+        const selector = await page.$(".channelWrap-warning__content--account");
+        if (selector) {
+          resolve({
+            reason: ErrorEnum.No_Pay_Way,
+            message: "当前没有可以直接使用的付款方式",
+            context,
+          });
+        }
       } catch (ex) {}
 
       try {
-        await page.waitForSelector(".channelWrap-warning__content--account", {
-          timeout,
-        });
-        resolve({
-          reason: ErrorEnum.No_Pay_Way,
-          message: "当前没有可以直接使用的付款方式",
-          context,
-        });
+        const selector = await page.$(".sms-verify__title");
+        if (selector) {
+          resolve({
+            reason: ErrorEnum.SMS,
+            message: "需要输入验证码",
+            context,
+          });
+        }
       } catch (ex) {}
 
       try {
-        await page.waitForSelector(".sms-verify__title", { timeout });
-        resolve({
-          reason: ErrorEnum.SMS,
-          message: "需要输入验证码",
-          context,
-        });
+        const selector = await page.$(".channelWrap-warning__content");
+        if (selector) {
+          resolve({
+            reason: ErrorEnum.No_Money,
+            message: "没有余额了",
+            context,
+          });
+        }
       } catch (ex) {}
 
-      try {
-        await page.waitForSelector(".channelWrap-warning__content", {
-          timeout,
-        });
-        resolve({
-          reason: ErrorEnum.No_Money,
-          message: "没有余额了",
-          context,
-        });
-      } catch (ex) {}
-
+      console.error("reject all");
       reject();
     });
   }
@@ -383,6 +379,8 @@ export class AlipayPlayWright {
     selector: string
   ): Promise<Boolean> {
     return new Promise((resolve, reject) => {
+      console.error("selector clicked:", selector);
+
       const { page, timeout } = context;
       this.catchError(context)
         .then((res) => {
@@ -407,6 +405,8 @@ export class AlipayPlayWright {
     callback?: () => void
   ): Promise<Boolean> {
     return new Promise((resolve, reject) => {
+      console.error("selector located:", selector);
+
       const { page, timeout } = context;
       this.catchError(context)
         .then((res) => {
@@ -431,11 +431,13 @@ export class AlipayPlayWright {
     word: string
   ): Promise<Boolean> {
     return new Promise(async (resolve, reject) => {
+      console.error("selector type:", selector);
+
       const { page } = context;
 
       try {
         await page.type(selector, word, {
-          delay: 100,
+          delay: 20,
         });
         this.catchError(context)
           .then((res) => {

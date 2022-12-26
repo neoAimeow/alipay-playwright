@@ -13,10 +13,24 @@ async function getBaseUrl(): Promise<string> {
 const REQUEST_TIMEOUT = 1000 * 15; // 请求超时时间
 
 const getRequest = async () => {
-  return axios.create({
+  const instance = axios.create({
     baseURL: await getBaseUrl(),
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      "Accept-Language": "zh-CN",
+    },
     timeout: REQUEST_TIMEOUT,
+    responseEncoding: "utf8",
   });
+
+  instance.interceptors.request.use(
+    (config) => {
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  return instance;
 };
 
 export default getRequest;

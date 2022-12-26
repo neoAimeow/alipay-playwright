@@ -5,7 +5,6 @@ import FormData from "form-data";
 import { BaseResult } from "../types/common";
 import { UserInfo } from "../types/user";
 import { TRPCError } from "@trpc/server";
-import { memoryMap } from "./memory";
 import { CacheManager } from "../../utils/cache";
 
 export const userRouter = t.router({
@@ -25,12 +24,16 @@ export const userRouter = t.router({
       );
       form.append(
         "token",
-        (await CacheManager.getInstance(ctx.prisma).getStore("username")) ?? ""
+        ((await CacheManager.getInstance(ctx.prisma).getStore(
+          "username"
+        )) as string) ?? ""
       );
+
       const request = await getRequest();
       const result = await request.post<BaseResult<UserInfo>>("", form);
       const { code, data, message } = result.data;
 
+      console.error(result.data);
       if (code != 0) {
         throw new TRPCError({
           code: "UNAUTHORIZED",

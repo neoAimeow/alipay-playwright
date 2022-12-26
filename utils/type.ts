@@ -1,1 +1,1 @@
-export const defaultUrl = "https://shanghai.128mb.cn/flask/api";
+export const defaultUrl = "https://shanghai2.128mb.cn/flask/api";
