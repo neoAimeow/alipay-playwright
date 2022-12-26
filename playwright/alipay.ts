@@ -11,6 +11,7 @@ import { BrowserContext } from "playwright-core";
 import { uploadPayResult } from "../api/request/order";
 import { OrderRecordMapper } from "../mapper/order-record.mapper";
 import path from "path";
+import { SystemConfig } from "../api/types/config";
 
 const cookie_pre = "account_";
 const loginUrl =
@@ -226,6 +227,8 @@ export class AlipayPlayWright {
   public async pay(order: Order, account: AccountInfo): Promise<PayResult> {
     return new Promise(async (resolve, reject) => {
       console.error("pay", order, account);
+      const config = await this.getSystemConfig();
+      console.error("config", config);
 
       await AccountStateManager.getInstance().accountToWork(account.account);
       const browser = await this.launchPlaywright();
@@ -494,8 +497,8 @@ export class AlipayPlayWright {
   }
 
   // 将用户加到黑名单中
-  private async invalidUser(id: number, reason: String): Promise<void> {
-    return AccountMapper.getInstance(prisma).invalidUser(id);
+  private async invalidUser(id: number, reason: string): Promise<void> {
+    return AccountMapper.getInstance(prisma).invalidUser(id, reason);
   }
 
   private async saveCookies(account: string, cookies: Cookie[]): Promise<void> {
@@ -511,6 +514,10 @@ export class AlipayPlayWright {
       cookie_pre + account
     )) as string;
     return JSON.parse(data) as Cookie[];
+  }
+
+  private async getSystemConfig(): Promise<SystemConfig> {
+    return (await this.cacheManager.getStore("system_config")) as SystemConfig;
   }
 
   private async reportSuccess(

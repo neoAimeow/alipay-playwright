@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Button, Card, Checkbox, Form, Input, Tooltip } from "antd";
+import { Button, Card, Checkbox, Form, Input, Tooltip, Modal } from "antd";
 import { trpc } from "../../../../utils/trpc";
 import { SystemConfig } from "../../../../api/types/config";
 import { useLocation } from "react-router-dom";
@@ -66,13 +66,21 @@ const ConfigView: React.FC = () => {
   const location = useLocation();
 
   const onFinish = (values: Record<string, number | string | boolean>) => {
-    const { timeoutDuration, isOpenSound } = values;
-    const config: SystemConfig = {
-      timeoutDuration: timeoutDuration as number,
-      isOpenSound: isOpenSound as boolean,
-    };
-    // setConfig(config);
-    storeMutation.mutate({ key: "system_config", value: config });
+    Modal.confirm({
+      title: "确认",
+      content: "是否修改设置?",
+      okText: "是",
+      cancelText: "否",
+      onOk: () => {
+        const { timeoutDuration, isOpenSound, isCloseWindow } = values;
+        const config: SystemConfig = {
+          timeoutDuration: timeoutDuration as number,
+          isOpenSound: isOpenSound as boolean,
+          isCloseWindow: isCloseWindow as boolean,
+        };
+        storeMutation.mutate({ key: "system_config", value: config });
+      },
+    });
   };
 
   // const onLogout = () => {};
@@ -95,6 +103,10 @@ const ConfigView: React.FC = () => {
 
           <Form.Item name="isOpenSound" valuePropName="checked">
             <Checkbox>是否打开提示音</Checkbox>
+          </Form.Item>
+
+          <Form.Item name="isCloseWindow" valuePropName="checked">
+            <Checkbox>支付时是否隐藏窗口</Checkbox>
           </Form.Item>
 
           <Form.Item>

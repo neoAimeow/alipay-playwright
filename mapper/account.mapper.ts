@@ -82,6 +82,7 @@ export class AccountMapper {
         account: account,
         password: password,
         isShort: isShort,
+        invalidReason: "",
         valid: true,
       },
     });
@@ -96,6 +97,7 @@ export class AccountMapper {
       data: {
         password: password,
         isShort: isShort,
+        invalidReason: "",
         valid: true,
       },
       where: { id: id },
@@ -115,6 +117,7 @@ export class AccountMapper {
       await this.prisma.account.updateMany({
         data: {
           valid: true,
+          invalidReason: "",
           version: {
             increment: 1,
           },
@@ -127,7 +130,7 @@ export class AccountMapper {
     }
   }
 
-  public async invalidUser(id: number): Promise<void> {
+  public async invalidUser(id: number, reason: string): Promise<void> {
     const data = await this.prisma.account.findFirst({
       where: { id: id },
     });
@@ -136,6 +139,7 @@ export class AccountMapper {
       await this.prisma.account.updateMany({
         data: {
           valid: false,
+          invalidReason: reason,
           version: {
             increment: 1,
           },

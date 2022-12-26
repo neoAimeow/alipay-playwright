@@ -171,9 +171,14 @@ const AccountView: React.FC = () => {
             dataSource={accounts}
             rowKey={(record: { id: number }) => `${record.id}`}
             style={{ marginTop: "20px" }}
-
           >
-            <Column title="帐号" dataIndex="account" key="id" width={200} align="center" />
+            <Column
+              title="帐号"
+              dataIndex="account"
+              key="id"
+              width={200}
+              align="center"
+            />
             <Column
               title="是否登录"
               dataIndex="isLogin"
@@ -190,8 +195,13 @@ const AccountView: React.FC = () => {
                 </div>
               )}
             />
-            <Column title="单数" dataIndex="count" key="count" width={120}
-                    align="center" />
+            <Column
+              title="单数"
+              dataIndex="count"
+              key="count"
+              width={120}
+              align="center"
+            />
             <Column
               title="金额"
               dataIndex="payment"
@@ -217,6 +227,7 @@ const AccountView: React.FC = () => {
                           const invalidAccountMutate = async () => {
                             await accountInvalidAccountMutation.mutateAsync({
                               id: value as number,
+                              reason: "手动失效",
                             });
                           };
                           invalidAccountMutate()

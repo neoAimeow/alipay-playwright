@@ -17,6 +17,7 @@ model Account {
   password String
   isShort  Boolean       @default(true)
   valid    Boolean       @default(true)
+  invalidReason String @default("")
   version Int @default(0)
 }
 
