@@ -1,4 +1,12 @@
-import { webkit, chromium, Browser, Page, devices, Cookie } from "playwright";
+import {
+  webkit,
+  firefox,
+  Browser,
+  Page,
+  devices,
+  Cookie,
+  chromium,
+} from "playwright";
 import { prisma } from "../api/db/client";
 import promiseDefer, { Deferred } from "../utils/defer";
 import { CacheManager } from "../utils/cache";
@@ -35,8 +43,9 @@ interface PlayWrightContext {
   browserContext: BrowserContext;
   page: Page;
   timeout: number;
-  order: Order;
+  // order: Order;
   account: AccountInfo;
+  isLogin: boolean;
 }
 
 interface PayResult {
@@ -76,17 +85,20 @@ export class AlipayPlayWright {
         process.env.NODE_ENV === "development"
           ? path.join(
               process.cwd(),
-              "buildResources/ms-playwright-win/chrome.exe"
+              "buildResources/ms-playwright-win/Playwright.exe"
             )
           : path.join(
               process.resourcesPath,
-              "buildResources/ms-playwright-win/chrome.exe"
+              "buildResources/ms-playwright-win/Playwright.exe"
             );
     }
 
-    const browser = await chromium.launch({
+    const config: SystemConfig = await this.getSystemConfig();
+    console.error("config", config);
+
+    const browser = await webkit.launch({
       ...executablePathObj,
-      headless: false,
+      headless: config.isCloseWindow ?? true,
       args: [
         "--disable-blink-features=AutomationControlled", // Web Driver 信息去除
       ],
@@ -103,11 +115,27 @@ export class AlipayPlayWright {
     const isShort = item.isShort;
     const context = await browser.newContext(devices["iPhone 13"]);
     const page = await context.newPage();
-    await page.goto(loginUrl);
 
-    await page.locator(".h5RouteAppSenior__h5pay").click();
-    await page.locator(".adm-input-element").fill(username);
-    await page.locator("button:has-text('下一步')").click();
+    const playwrightContext: PlayWrightContext = {
+      browserContext: context,
+      page,
+      timeout: 3000,
+      account: item,
+      isLogin: true,
+    };
+
+    await page.goto(loginUrl, {
+      timeout: 1000,
+      waitUntil: "domcontentloaded",
+    });
+
+    await this.click(playwrightContext, ".h5RouteAppSenior__h5pay");
+    await this.type(playwrightContext, ".adm-input-element", username);
+    await this.click(playwrightContext, "button:has-text('下一步')");
+    //
+    // await page.locator(".h5RouteAppSenior__h5pay").click();
+    // await page.locator(".adm-input-element").fill(username);
+    // await page.locator("button:has-text('下一步')").click();
 
     await page.waitForEvent("requestfinished");
     await page.waitForLoadState("domcontentloaded");
@@ -119,12 +147,36 @@ export class AlipayPlayWright {
       await context.close();
       return;
     } else if (content.match("输入短信验证码")) {
-      await page.locator(".toAccountLoginWrap___2ir3r").click();
-      await page.waitForTimeout(1000);
+      await this.click(playwrightContext, ".toAccountLoginWrap___2ir3r");
+      // await page.locator(".toAccountLoginWrap___2ir3r").click();
+      // await page.waitForTimeout(1000);
+      //
+      // await page.locator(".my-passcode-input-native-input").fill(password);
 
-      await page.locator(".my-passcode-input-native-input").fill(password);
+      // await page.waitForSelector(".my-passcode-input-native-input", {
+      //   timeout: 3000,
+      // });
+      // await page.type(".my-passcode-input-native-input", password, {
+      //   delay: 20,
+      // });
 
-      await page.locator(".adm-button-large").click();
+      await page.screenshot({
+        path: "screenshot.png",
+        fullPage: true,
+      });
+
+      await this.type(
+        playwrightContext,
+        ".my-passcode-input-native-input",
+        password
+      );
+
+      await page.screenshot({
+        path: "screenshot1.png",
+        fullPage: true,
+      });
+      // await page.locator(".adm-button-large").click();
+      await this.click(playwrightContext, ".adm-button-large");
 
       await page.waitForTimeout(1000);
       const finalStepContent = await page.content();
@@ -139,12 +191,41 @@ export class AlipayPlayWright {
       }
     } else {
       if (isShort) {
-        await page.locator(".my-passcode-input-native-input").fill(password);
+        await page.screenshot({
+          path: "~/Downloads/screenshot.png",
+          fullPage: true,
+        });
+
+        await this.type(
+          playwrightContext,
+          ".my-passcode-input-native-input",
+          password
+        );
+
+        await page.screenshot({
+          path: "~/Downloads/screenshot1.png",
+          fullPage: true,
+        });
+
+        // await page.waitForSelector(".my-passcode-input-native-input", {
+        //   timeout: 3000,
+        // });
+        // await page.type(".my-passcode-input-native-input", password, {
+        //   delay: 20,
+        // });
       } else {
-        await page.locator(".adm-input-element >> nth=1").fill(password);
+        await this.type(
+          playwrightContext,
+          ".adm-input-element >> nth=1",
+          password
+        );
+
+        // await page.locator(".adm-input-element >> nth=1").fill(password);
       }
 
-      await page.locator("button:has-text('下一步')").click();
+      await this.click(playwrightContext, "button:has-text('下一步')");
+
+      // await page.locator("button:has-text('下一步')").click();
       // save cookie
       const cookies = await context.cookies();
       await this.saveCookies(username, cookies);
@@ -227,8 +308,6 @@ export class AlipayPlayWright {
   public async pay(order: Order, account: AccountInfo): Promise<PayResult> {
     return new Promise(async (resolve, reject) => {
       console.error("pay", order, account);
-      const config = await this.getSystemConfig();
-      console.error("config", config);
 
       await AccountStateManager.getInstance().accountToWork(account.account);
       const browser = await this.launchPlaywright();
@@ -248,8 +327,8 @@ export class AlipayPlayWright {
           browserContext: context,
           page,
           timeout: 3000,
-          order,
           account,
+          isLogin: false,
         };
         await this.click(playwrightContext, ".h5RouteAppSenior__h5pay").finally(
           async () => {
@@ -278,12 +357,6 @@ export class AlipayPlayWright {
                       ".cashierActivity__content-money--price"
                     );
                     const amountStr = (await moneySelector?.innerText()) ?? "0";
-                    console.error(
-                      "amountstr is ",
-                      amountStr,
-                      await moneySelector?.innerText(),
-                      Number(amountStr)
-                    );
                     await OrderRecordMapper.getInstance(prisma).addRecord(
                       account.id,
                       Number(amountStr)
@@ -315,14 +388,14 @@ export class AlipayPlayWright {
 
   private catchError(context: PlayWrightContext): Promise<ErrorMsg> {
     return new Promise(async (resolve, reject) => {
-      const { page, timeout } = context;
+      const { page, isLogin } = context;
 
       await page.waitForTimeout(800);
 
       // TODO: 优化耗时
       try {
         const selector = await page.$(".my-adm-input__label");
-        if (selector) {
+        if (selector && !isLogin) {
           resolve({ reason: ErrorEnum.Not_Login, message: "未登录", context });
         }
       } catch (ex) {}
@@ -341,7 +414,7 @@ export class AlipayPlayWright {
 
       try {
         const selector = await page.$(".channelWrap-warning__content--account");
-        if (selector) {
+        if (selector && !isLogin) {
           resolve({
             reason: ErrorEnum.No_Pay_Way,
             message: "当前没有可以直接使用的付款方式",
@@ -352,7 +425,7 @@ export class AlipayPlayWright {
 
       try {
         const selector = await page.$(".sms-verify__title");
-        if (selector) {
+        if (selector && !isLogin) {
           resolve({
             reason: ErrorEnum.SMS,
             message: "需要输入验证码",
@@ -363,7 +436,7 @@ export class AlipayPlayWright {
 
       try {
         const selector = await page.$(".channelWrap-warning__content");
-        if (selector) {
+        if (selector && !isLogin) {
           resolve({
             reason: ErrorEnum.No_Money,
             message: "没有余额了",
@@ -460,7 +533,7 @@ export class AlipayPlayWright {
     context: PlayWrightContext,
     errorMsg: ErrorMsg
   ): Promise<void> {
-    const { page, browserContext, account, order } = context;
+    const { page, browserContext, account } = context;
     const { reason, message } = errorMsg;
     console.error(reason, message);
     switch (reason) {

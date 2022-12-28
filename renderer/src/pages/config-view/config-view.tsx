@@ -88,6 +88,7 @@ const ConfigView: React.FC = () => {
   return (
     <div className="dash-card">
       <Card title="设置" bordered={false}>
+        <div>当前版本号：1.0.0</div>
         <Form
           name="basic"
           onFinish={onFinish}
@@ -106,7 +107,7 @@ const ConfigView: React.FC = () => {
           </Form.Item>
 
           <Form.Item name="isCloseWindow" valuePropName="checked">
-            <Checkbox>支付时是否隐藏窗口</Checkbox>
+            <Checkbox>支付时是否隐藏窗口（重启生效）</Checkbox>
           </Form.Item>
 
           <Form.Item>

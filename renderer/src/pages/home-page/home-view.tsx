@@ -12,7 +12,7 @@ const { Header, Content, Footer, Sider } = Layout;
 
 const items: MenuProps["items"] = [
   { key: "1", icon: React.createElement(UserOutlined), label: "帐号管理" },
-  { key: "2", icon: React.createElement(UserOutlined), label: "订单状态" },
+  // { key: "2", icon: React.createElement(UserOutlined), label: "订单状态" },
   // { key: "3", icon: React.createElement(UserOutlined), label: "运行日志" },
   { key: "4", icon: React.createElement(UserOutlined), label: "设置" },
 ];

@@ -1,6 +1,6 @@
 {
   "name": "KFC-Tools",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "",
   "private": true,
   "main": "main/dist/index.cjs",
@@ -9,7 +9,7 @@
     "bootstrap": "npm install && npm run db:push",
     "dev": "cross-env NODE_ENV=development npm run watch:desktop",
     "build": "npm run build:main & npm run build:preload & npm run build:renderer",
-    "compile": "cross-env MODE=production npm run build && cross-env NODE_ENV=production ts-node scripts/compile.ts",
+    "compile": "cross-env MODE=production npm run build && cross-env NODE_ENV=production  ts-node scripts/compile.ts",
     "format": "prettier -w .",
     "lint": "eslint .",
     "watch:web": "ts-node scripts/watchWeb.ts",
@@ -57,6 +57,7 @@
     "axios": "^1.2.0",
     "electron-promise-ipc": "^2.2.4",
     "electron-store": "^8.1.0",
+    "electron-updater": "^5.3.0",
     "eslint-config-prettier": "^8.5.0",
     "playwright": "^1.28.1",
     "playwright-core": "^1.28.1",
@@ -65,5 +66,13 @@
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.4.3",
     "zod": "^3.19.1"
+  },
+  "build": {
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://cdn.128mb.cn/web_resources/new-kfc-alipay/releases/"
+      }
+    ]
   }
 }

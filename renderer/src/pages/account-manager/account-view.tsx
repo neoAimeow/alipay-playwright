@@ -180,7 +180,7 @@ const AccountView: React.FC = () => {
               align="center"
             />
             <Column
-              title="是否登录"
+              title="工作状态"
               dataIndex="isLogin"
               key="isLogin"
               width={120}
@@ -188,9 +188,9 @@ const AccountView: React.FC = () => {
               render={(record) => (
                 <div>
                   {record ? (
-                    <div style={{ color: "green" }}>是</div>
+                    <div style={{ color: "green" }}>工作中</div>
                   ) : (
-                    <div style={{ color: "red" }}>否</div>
+                    <div style={{ color: "red" }}>等待登录</div>
                   )}
                 </div>
               )}
@@ -354,6 +354,14 @@ const AccountView: React.FC = () => {
               key="id"
               width={300}
             />
+            <Column
+              title="失效原因"
+              dataIndex="invalidReason"
+              align="center"
+              key="id"
+              width={300}
+            />
+
             <Column
               title="操作"
               dataIndex="account"
