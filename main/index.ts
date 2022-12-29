@@ -1,4 +1,4 @@
-import { app, ipcMain } from "electron";
+import { app, ipcMain, Notification } from "electron";
 import type { IpcMain } from "electron";
 import "./security-restrictions";
 import { restoreOrCreateWindow, pageUrl } from "./mainWindow";
@@ -20,7 +20,6 @@ import getRequest from "../utils/axios";
 import { prisma } from "../api/db/client";
 import { AccountInfo } from "../api/router/account";
 import { autoUpdater } from "electron-updater";
-import * as electron from "electron";
 
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
@@ -93,17 +92,15 @@ app
 
         if (downloadPromise) {
           downloadPromise.then(() => {
-            new electron.Notification({
+            new Notification({
               title: "新版本提醒",
-              body: `${autoUpdater.app.name} '新版本' ${it.updateInfo.version} '将会在系统关闭后自动更新'`,
+              body: `'新版本' ${it.updateInfo.version} '将会在系统关闭后自动更新'`,
             }).show();
           });
         }
       }
     });
     return checkForUpdatesPromise;
-
-    // return autoUpdater.checkForUpdatesAndNotify();
   })
   .catch((e) => console.error("Failed create window:", e));
 

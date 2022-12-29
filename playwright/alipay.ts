@@ -149,32 +149,24 @@ export class AlipayPlayWright {
     } else if (content.match("输入短信验证码")) {
       await this.click(playwrightContext, ".toAccountLoginWrap___2ir3r");
       // await page.locator(".toAccountLoginWrap___2ir3r").click();
-      // await page.waitForTimeout(1000);
+      await page.waitForTimeout(1000);
       //
-      // await page.locator(".my-passcode-input-native-input").fill(password);
 
+      console.error("wait for enter password when sms in");
       // await page.waitForSelector(".my-passcode-input-native-input", {
       //   timeout: 3000,
       // });
       // await page.type(".my-passcode-input-native-input", password, {
       //   delay: 20,
       // });
+      await page.locator(".my-passcode-input-native-input").fill(password);
 
-      await page.screenshot({
-        path: "screenshot.png",
-        fullPage: true,
-      });
+      // await this.type(
+      //   playwrightContext,
+      //   ".my-passcode-input-native-input",
+      //   password
+      // );
 
-      await this.type(
-        playwrightContext,
-        ".my-passcode-input-native-input",
-        password
-      );
-
-      await page.screenshot({
-        path: "screenshot1.png",
-        fullPage: true,
-      });
       // await page.locator(".adm-button-large").click();
       await this.click(playwrightContext, ".adm-button-large");
 
