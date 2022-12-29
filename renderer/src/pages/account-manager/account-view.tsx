@@ -67,7 +67,8 @@ const AccountView: React.FC = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [invalidAccounts, setInvalidAccounts] = useState<AccountInfo[]>([]);
   const inputValueRef = useRef<AccountRef>({});
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [loginLoadings, setLoginLoadings] = useState<boolean[]>([]);
+  const [isLogin, setIsLogin] = useState<boolean>(false);
 
   const context = trpc.useContext();
 
@@ -79,8 +80,34 @@ const AccountView: React.FC = () => {
   const accountDisableMutation = trpc.account.disableAccount.useMutation();
 
   useLayoutEffect(() => {
-    reloadData();
+    setIsLogin(true);
+    const loginAll = async () => {
+      try {
+        await window.playwright.loginAll();
+      } catch (ex) {}
+      setIsLogin(false);
+    };
+
+    loginAll().then(() => {
+      reloadData();
+    });
   }, []);
+
+  const enterLoginLoading = (index: number) => {
+    setLoginLoadings((prevLoadings) => {
+      const newLoadings = [...prevLoadings];
+      newLoadings[index] = true;
+      return newLoadings;
+    });
+  };
+
+  const outLoginLoading = (index: number) => {
+    setLoginLoadings((prevLoadings) => {
+      const newLoadings = [...prevLoadings];
+      newLoadings[index] = false;
+      return newLoadings;
+    });
+  };
 
   const reloadData = useCallback(() => {
     const fetchData = async () => {
@@ -91,7 +118,6 @@ const AccountView: React.FC = () => {
       setInvalidAccounts(invalidAccount);
 
       const orders = await context.order.getOrder.fetch();
-      setOrders(orders);
       window.playwright.pay(orders);
     };
     fetchData().catch((ex) => {
@@ -140,30 +166,6 @@ const AccountView: React.FC = () => {
             >
               添加帐号
             </Button>
-
-            {/*<Button*/}
-            {/*  type="primary"*/}
-            {/*  shape="round"*/}
-            {/*  icon={<PlusOutlined />}*/}
-            {/*  size="large"*/}
-            {/*  onClick={() => {*/}
-            {/*    window.playwright.login();*/}
-            {/*  }}*/}
-            {/*>*/}
-            {/*  批量添加*/}
-            {/*</Button>*/}
-
-            {/*  <Button*/}
-            {/*    type="primary"*/}
-            {/*    shape="round"*/}
-            {/*    icon={<PlaySquareOutlined />}*/}
-            {/*    size="large"*/}
-            {/*    onClick={() => {*/}
-            {/*      window.playwright.pay(orders);*/}
-            {/*    }}*/}
-            {/*  >*/}
-            {/*    启动*/}
-            {/*  </Button>*/}
           </Space>
 
           <Table
@@ -214,7 +216,7 @@ const AccountView: React.FC = () => {
               dataIndex="id"
               key="id"
               align="center"
-              render={(value, record) => (
+              render={(value, record, index) => (
                 <div>
                   <Space
                     direction="vertical"
@@ -272,8 +274,11 @@ const AccountView: React.FC = () => {
 
                     <Space>
                       <Button
-                        onClick={() => {
-                          window.playwright.login(record as AccountInfo);
+                        loading={loginLoadings[index] || isLogin}
+                        onClick={async () => {
+                          enterLoginLoading(index);
+                          await window.playwright.login(record as AccountInfo);
+                          outLoginLoading(index);
                         }}
                       >
                         登录
@@ -305,40 +310,6 @@ const AccountView: React.FC = () => {
           </Table>
         </Card>
 
-        {/*<Card title="订单列表" bordered={false} style={{ width: "100%" }}>*/}
-        {/*  <Table*/}
-        {/*    key="kfcOrderId"*/}
-        {/*    dataSource={orders}*/}
-        {/*    rowKey={(record: { kfcOrderId: string | undefined }) =>*/}
-        {/*      `${record.kfcOrderId}`*/}
-        {/*    }*/}
-        {/*    style={{ marginTop: "20px" }}*/}
-        {/*  >*/}
-        {/*    <Column*/}
-        {/*      title="kfcOrderId"*/}
-        {/*      dataIndex="kfcOrderId"*/}
-        {/*      key="kfcOrderId"*/}
-        {/*      width={50}*/}
-        {/*    />*/}
-        {/*    <Column*/}
-        {/*      title="taobaoOrderId"*/}
-        {/*      dataIndex="taobaoOrderId"*/}
-        {/*      key="taobaoOrderId"*/}
-        {/*      width={300}*/}
-        {/*    />*/}
-        {/*    <Column*/}
-        {/*      title="支付链接"*/}
-        {/*      dataIndex="payUrl"*/}
-        {/*      key="payUrl"*/}
-        {/*      render={(value) => (*/}
-        {/*        <div>*/}
-        {/*          <a href={value as string}>支付链接</a>*/}
-        {/*        </div>*/}
-        {/*      )}*/}
-        {/*    />*/}
-        {/*  </Table>*/}
-        {/*</Card>*/}
-
         <Card title="失效帐号" bordered={false} style={{ width: "100%" }}>
           <Table
             key="id"
@@ -346,7 +317,6 @@ const AccountView: React.FC = () => {
             rowKey={(record: { id: number }) => `${record.id}`}
             style={{ marginTop: "20px" }}
           >
-            {/*<Column title="id" dataIndex="id" key="id" width={50} />*/}
             <Column
               title="支付宝帐号"
               dataIndex="account"

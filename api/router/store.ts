@@ -27,4 +27,10 @@ export const storeRouter = t.router({
     .mutation(async ({ input, ctx }) => {
       return CacheManager.getInstance(ctx.prisma).delete(input.key);
     }),
+
+  deleteMany: t.procedure
+    .input(z.object({ keys: z.array(z.string()) }))
+    .mutation(async ({ input, ctx }) => {
+      return CacheManager.getInstance(ctx.prisma).deleteMany(input.keys);
+    }),
 });

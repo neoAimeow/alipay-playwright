@@ -75,9 +75,37 @@ export class CacheManager {
     const data = await this.prisma.cache.findFirst({
       where: { key: key },
     });
+    console.info("delete data is : ", data);
     if (data) {
       await this.prisma.cache.delete({
         where: { id: data.id },
+      });
+    }
+
+    return true;
+  }
+
+  public async deleteMany(keys: string[]): Promise<boolean> {
+    const caches = await this.prisma.cache.findMany({
+      where: {
+        key: {
+          in: keys,
+        },
+      },
+    });
+
+    if (caches && caches.length > 0) {
+      const arr: number[] = caches.map((item) => {
+        return item.id;
+      });
+
+      console.info("delete data is : ", caches);
+      await this.prisma.cache.deleteMany({
+        where: {
+          id: {
+            in: arr,
+          },
+        },
       });
     }
 

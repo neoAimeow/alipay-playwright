@@ -3,6 +3,7 @@ import { Button, Card, Checkbox, Form, Input, Tooltip, Modal } from "antd";
 import { trpc } from "../../../../utils/trpc";
 import { SystemConfig } from "../../../../api/types/config";
 import { useLocation } from "react-router-dom";
+import eventBus from "../../../../utils/event";
 
 interface NumericInputProps {
   style: React.CSSProperties;
@@ -61,25 +62,21 @@ const NumericInput = (props: NumericInputProps) => {
 const ConfigView: React.FC = () => {
   const [value, setValue] = useState("");
   const storeMutation = trpc.store.setStore.useMutation();
-  const deleteStoreMutation = trpc.store.delete.useMutation();
+  const deleteStoreMutation = trpc.store.deleteMany.useMutation();
   const heartDownMutation = trpc.user.heartBeatDown.useMutation();
-  const location = useLocation();
 
   const onFinish = (values: Record<string, number | string | boolean>) => {
-    Modal.confirm({
+    console.error("保存成功");
+    const { timeoutDuration, isOpenSound, isCloseWindow } = values;
+    const config: SystemConfig = {
+      timeoutDuration: timeoutDuration as number,
+      isOpenSound: isOpenSound as boolean,
+      isCloseWindow: isCloseWindow as boolean,
+    };
+    storeMutation.mutate({ key: "system_config", value: config });
+    Modal.success({
       title: "确认",
-      content: "是否修改设置?",
-      okText: "是",
-      cancelText: "否",
-      onOk: () => {
-        const { timeoutDuration, isOpenSound, isCloseWindow } = values;
-        const config: SystemConfig = {
-          timeoutDuration: timeoutDuration as number,
-          isOpenSound: isOpenSound as boolean,
-          isCloseWindow: isCloseWindow as boolean,
-        };
-        storeMutation.mutate({ key: "system_config", value: config });
-      },
+      content: "保存成功",
     });
   };
 
@@ -120,14 +117,26 @@ const ConfigView: React.FC = () => {
         <Button
           type="primary"
           htmlType="submit"
-          onClick={() => {
-            deleteStoreMutation.mutate({ key: "input_username" });
-            deleteStoreMutation.mutate({ key: "input_password" });
-            deleteStoreMutation.mutate({ key: "input_autoLogin" });
-            heartDownMutation.mutate();
-            deleteStoreMutation.mutate({ key: "userInfo" });
-            deleteStoreMutation.mutate({ key: "token" });
-            storeMutation.mutate({ key: "is_login", value: "false" });
+          onClick={async () => {
+            await heartDownMutation.mutate();
+            await deleteStoreMutation.mutate({
+              keys: [
+                "input_username",
+                "input_password",
+                "input_autoLogin",
+                "userInfo",
+                "token",
+                "",
+              ],
+            });
+            await storeMutation.mutate({ key: "is_login", value: "false" });
+            Modal.success({
+              title: "确认",
+              content: "登出成功",
+              onOk: () => {
+                eventBus.emit("event_logout");
+              },
+            });
           }}
         >
           退出登录

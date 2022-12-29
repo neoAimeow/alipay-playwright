@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import logo from "../../assets/logo.png";
 import { UserOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
@@ -6,7 +6,7 @@ import { Layout, Menu } from "antd";
 import "./style.css";
 import { Outlet, useNavigate } from "react-router-dom";
 import LoginView from "../login-view/login-view";
-import { trpc } from "../../../../utils/trpc";
+import eventBus from "../../../../utils/event";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -19,6 +19,12 @@ const items: MenuProps["items"] = [
 const HomeView: React.FC = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState<boolean>(false);
+
+  useLayoutEffect(() => {
+    eventBus.on("event_logout", () => {
+      setIsLogin(false);
+    });
+  }, []);
 
   const onClick: MenuProps["onClick"] = (e) => {
     switch (e.key) {
@@ -86,7 +92,6 @@ const HomeView: React.FC = () => {
     <LoginView
       isLoginCallBack={() => {
         setIsLogin(true);
-        window.playwright.loginAll();
       }}
     />
   );
