@@ -183,21 +183,11 @@ export class AlipayPlayWright {
       }
     } else {
       if (isShort) {
-        await page.screenshot({
-          path: "~/Downloads/screenshot.png",
-          fullPage: true,
-        });
-
         await this.type(
           playwrightContext,
           ".my-passcode-input-native-input",
           password
         );
-
-        await page.screenshot({
-          path: "~/Downloads/screenshot1.png",
-          fullPage: true,
-        });
 
         // await page.waitForSelector(".my-passcode-input-native-input", {
         //   timeout: 3000,
@@ -582,7 +572,13 @@ export class AlipayPlayWright {
   }
 
   private async getSystemConfig(): Promise<SystemConfig> {
-    return (await this.cacheManager.getStore("system_config")) as SystemConfig;
+    return (
+      ((await this.cacheManager.getStore("system_config")) as SystemConfig) ?? {
+        timeoutDuration: 15,
+        isOpenSound: true,
+        isCloseWindow: true,
+      }
+    );
   }
 
   private async reportSuccess(

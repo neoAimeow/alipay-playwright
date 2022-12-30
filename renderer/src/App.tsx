@@ -13,7 +13,8 @@ import { MyContext } from "./PlaywrightContext";
 
 function App() {
   const [isLogin, setIsLogin] = useState<boolean>(false);
-
+  const [isAlipayAccountLogin, setIsAlipayAccountLogin] =
+    useState<boolean>(false);
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => {
     return trpc.createClient({
@@ -24,7 +25,14 @@ function App() {
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
       <QueryClientProvider client={queryClient}>
-        <MyContext.Provider value={{ isLogin, setIsLogin }}>
+        <MyContext.Provider
+          value={{
+            isLogin,
+            setIsLogin,
+            isAlipayAccountLogin,
+            setIsAlipayAccountLogin,
+          }}
+        >
           <Router>
             <Routes>
               <Route path="/" element={<HomeView />}>

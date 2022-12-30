@@ -85,8 +85,11 @@ const HomeView: React.FC = () => {
     </div>
   ) : (
     <LoginView
-      isLoginCallBack={() => {
+      isLoginCallBack={async () => {
         context.setIsLogin(true);
+        context.setIsAlipayAccountLogin(false);
+        await window.playwright.loginAll();
+        context.setIsAlipayAccountLogin(true);
       }}
     />
   );

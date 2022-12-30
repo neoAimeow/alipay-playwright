@@ -1,5 +1,6 @@
 import React, {
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -18,6 +19,7 @@ import { AccountInfo } from "../../../../api/router/account";
 import { Order } from "../../../../api/router/order";
 import useIntervalAsync from "../../../../utils/use-interval";
 import { containsOnlyNumber } from "../../../../utils/string-util";
+import { MyContext } from "../../PlaywrightContext";
 
 interface AccountRef {
   account?: string;
@@ -34,25 +36,32 @@ const accountModal = (param: {
   account?: AccountInfo;
 }) => {
   Modal.confirm({
-    title: param.type === "create" ? "创建帐号" : "修改帐号",
+    title: param.type === "create" ? "添加帐号" : "修改帐号",
     icon: <FormOutlined />,
     content: (
       <div>
         <Space direction="vertical" size="middle" style={{ display: "flex" }}>
-          <Input
-            placeholder={
-              param.type === "create" ? "" : param.account?.account ?? ""
-            }
-            disabled={param.type !== "create"}
-            onChange={({ target: { value } }) => {
-              param.ref.current.account = value;
-            }}
-          />
-          <Input
-            onChange={({ target: { value } }) => {
-              param.ref.current.password = value;
-            }}
-          />
+          <Space>
+            <div>支付宝帐号：</div>
+            <Input
+              placeholder={
+                param.type === "create" ? "" : param.account?.account ?? ""
+              }
+              disabled={param.type !== "create"}
+              onChange={({ target: { value } }) => {
+                param.ref.current.account = value;
+              }}
+            />
+          </Space>
+          <Space>
+            <div>支付密码：</div>
+            <Input
+              style={{ marginLeft: 14 }}
+              onChange={({ target: { value } }) => {
+                param.ref.current.password = value;
+              }}
+            />
+          </Space>
         </Space>
       </div>
     ),
@@ -68,7 +77,6 @@ const AccountView: React.FC = () => {
   const [invalidAccounts, setInvalidAccounts] = useState<AccountInfo[]>([]);
   const inputValueRef = useRef<AccountRef>({});
   const [loginLoadings, setLoginLoadings] = useState<boolean[]>([]);
-  const [isLogin, setIsLogin] = useState<boolean>(false);
 
   const context = trpc.useContext();
 
@@ -78,20 +86,7 @@ const AccountView: React.FC = () => {
     trpc.account.invalidAccount.useMutation();
   const accountValidAccountMutation = trpc.account.validAccount.useMutation();
   const accountDisableMutation = trpc.account.disableAccount.useMutation();
-
-  useLayoutEffect(() => {
-    setIsLogin(true);
-    const loginAll = async () => {
-      try {
-        await window.playwright.loginAll();
-      } catch (ex) {}
-      setIsLogin(false);
-    };
-
-    loginAll().then(() => {
-      reloadData();
-    });
-  }, []);
+  const myContext = useContext(MyContext);
 
   const enterLoginLoading = (index: number) => {
     setLoginLoadings((prevLoadings) => {
@@ -274,14 +269,19 @@ const AccountView: React.FC = () => {
 
                     <Space>
                       <Button
-                        loading={loginLoadings[index] || isLogin}
+                        loading={
+                          loginLoadings[index] ||
+                          !myContext.isAlipayAccountLogin
+                        }
+                        disabled={(record as AccountInfo).isLogin}
                         onClick={async () => {
+                          console.error(record);
                           enterLoginLoading(index);
                           await window.playwright.login(record as AccountInfo);
                           outLoginLoading(index);
                         }}
                       >
-                        登录
+                        {(record as AccountInfo).isLogin ? "已登录" : "未登录"}
                       </Button>
 
                       <Button
