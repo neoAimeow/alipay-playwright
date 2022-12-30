@@ -19,7 +19,6 @@ import { CacheManager } from "../utils/cache";
 import getRequest from "../utils/axios";
 import { prisma } from "../api/db/client";
 import { AccountInfo } from "../api/router/account";
-import { autoUpdater } from "electron-updater";
 
 const isSingleInstance = app.requestSingleInstanceLock();
 if (!isSingleInstance) {
@@ -84,23 +83,26 @@ app
       module.autoUpdater ||
       (module.default.autoUpdater as typeof module["autoUpdater"]);
 
-    console.error("update invoked , autoUpdate", autoUpdater);
-    const checkForUpdatesPromise = autoUpdater.checkForUpdates();
-    checkForUpdatesPromise.then((it) => {
-      if (it) {
-        const downloadPromise = it.downloadPromise;
+    console.error("update invoked , autoUpdate");
 
-        if (downloadPromise) {
-          downloadPromise.then(() => {
-            new Notification({
-              title: "新版本提醒",
-              body: `'新版本' ${it.updateInfo.version} '将会在系统关闭后自动更新'`,
-            }).show();
-          });
-        }
-      }
-    });
-    return checkForUpdatesPromise;
+    // const checkForUpdatesPromise = autoUpdater.checkForUpdates();
+    // checkForUpdatesPromise.then((it) => {
+    //   if (it) {
+    //     const downloadPromise = it.downloadPromise;
+    //
+    //     if (downloadPromise) {
+    //       downloadPromise.then(() => {
+    //         new Notification({
+    //           title: "新版本提醒",
+    //           body: `'新版本' ${it.updateInfo.version} '将会在系统关闭后自动更新'`,
+    //         }).show();
+    //       });
+    //     }
+    //   }
+    // });
+    // return checkForUpdatesPromise;
+
+    return autoUpdater.checkForUpdatesAndNotify();
   })
   .catch((e) => console.error("Failed create window:", e));
 

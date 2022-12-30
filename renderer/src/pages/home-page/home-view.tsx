@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useContext, useLayoutEffect, useState } from "react";
 import logo from "../../assets/logo.png";
 import { UserOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
@@ -6,7 +6,8 @@ import { Layout, Menu } from "antd";
 import "./style.css";
 import { Outlet, useNavigate } from "react-router-dom";
 import LoginView from "../login-view/login-view";
-import eventBus from "../../../../utils/event";
+import { MyContext } from "../../PlaywrightContext";
+// import eventBus from "../../../../utils/event";
 
 const { Header, Content, Footer, Sider } = Layout;
 
@@ -18,13 +19,7 @@ const items: MenuProps["items"] = [
 ];
 const HomeView: React.FC = () => {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState<boolean>(false);
-
-  useLayoutEffect(() => {
-    eventBus.on("event_logout", () => {
-      setIsLogin(false);
-    });
-  }, []);
+  const context = useContext(MyContext);
 
   const onClick: MenuProps["onClick"] = (e) => {
     switch (e.key) {
@@ -42,7 +37,7 @@ const HomeView: React.FC = () => {
         break;
     }
   };
-  return isLogin ? (
+  return context.isLogin ? (
     <div className="home-view">
       <Layout hasSider>
         <Sider
@@ -91,7 +86,7 @@ const HomeView: React.FC = () => {
   ) : (
     <LoginView
       isLoginCallBack={() => {
-        setIsLogin(true);
+        context.setIsLogin(true);
       }}
     />
   );

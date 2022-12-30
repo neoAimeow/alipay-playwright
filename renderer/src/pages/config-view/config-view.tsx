@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Button, Card, Checkbox, Form, Input, Tooltip, Modal } from "antd";
 import { trpc } from "../../../../utils/trpc";
 import { SystemConfig } from "../../../../api/types/config";
-import { useLocation } from "react-router-dom";
-import eventBus from "../../../../utils/event";
+import { MyContext } from "../../PlaywrightContext";
 
 interface NumericInputProps {
   style: React.CSSProperties;
@@ -64,13 +63,18 @@ const ConfigView: React.FC = () => {
   const storeMutation = trpc.store.setStore.useMutation();
   const deleteStoreMutation = trpc.store.deleteMany.useMutation();
   const heartDownMutation = trpc.user.heartBeatDown.useMutation();
+  const context = useContext(MyContext);
 
   const onFinish = (values: Record<string, number | string | boolean>) => {
     console.error("保存成功");
-    const { timeoutDuration, isOpenSound, isCloseWindow } = values;
+    const {
+      timeoutDuration,
+      //  isOpenSound,
+      isCloseWindow,
+    } = values;
     const config: SystemConfig = {
       timeoutDuration: timeoutDuration as number,
-      isOpenSound: isOpenSound as boolean,
+      // isOpenSound: isOpenSound as boolean,
       isCloseWindow: isCloseWindow as boolean,
     };
     storeMutation.mutate({ key: "system_config", value: config });
@@ -80,12 +84,10 @@ const ConfigView: React.FC = () => {
     });
   };
 
-  // const onLogout = () => {};
-
   return (
     <div className="dash-card">
       <Card title="设置" bordered={false}>
-        <div>当前版本号：1.0.0</div>
+        <div>当前版本号：1.0.7</div>
         <Form
           name="basic"
           onFinish={onFinish}
@@ -99,9 +101,9 @@ const ConfigView: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item name="isOpenSound" valuePropName="checked">
-            <Checkbox>是否打开提示音</Checkbox>
-          </Form.Item>
+          {/*<Form.Item name="isOpenSound" valuePropName="checked">*/}
+          {/*  <Checkbox>是否打开提示音</Checkbox>*/}
+          {/*</Form.Item>*/}
 
           <Form.Item name="isCloseWindow" valuePropName="checked">
             <Checkbox>支付时是否隐藏窗口（重启生效）</Checkbox>
@@ -119,7 +121,7 @@ const ConfigView: React.FC = () => {
           htmlType="submit"
           onClick={async () => {
             await heartDownMutation.mutate();
-            await deleteStoreMutation.mutate({
+            await deleteStoreMutation.mutateAsync({
               keys: [
                 "input_username",
                 "input_password",
@@ -129,12 +131,15 @@ const ConfigView: React.FC = () => {
                 "",
               ],
             });
-            await storeMutation.mutate({ key: "is_login", value: "false" });
+            await storeMutation.mutateAsync({
+              key: "is_login",
+              value: "false",
+            });
             Modal.success({
               title: "确认",
               content: "登出成功",
               onOk: () => {
-                eventBus.emit("event_logout");
+                context.setIsLogin(false);
               },
             });
           }}
@@ -142,13 +147,6 @@ const ConfigView: React.FC = () => {
           退出登录
         </Button>
       </Card>
-      {/*<Button*/}
-      {/*  type="primary"*/}
-      {/*  onClick={onLogout}*/}
-      {/*  style={{ marginLeft: 10, marginTop: 30 }}*/}
-      {/*>*/}
-      {/*  退出登录*/}
-      {/*</Button>*/}
     </div>
   );
 };

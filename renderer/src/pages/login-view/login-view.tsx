@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button, Card, Checkbox, Form, Input, Modal, Space } from "antd";
 import { trpc } from "../../../../utils/trpc";
 import { TRPCError } from "@trpc/server";
@@ -104,17 +104,27 @@ const LoginView = (props: LoginViewProps) => {
       });
   };
 
-  useEffect(() => {
-    const username = userNameQuery.data;
-    const password = passwordQuery.data;
-    const autoLogin = autoLoginQuery.data;
-    console.error("auto login", username, password, autoLogin);
+  useLayoutEffect(() => {
+    const prepare = async () => {
+      try {
+        await userNameQuery.refetch();
+        await passwordQuery.refetch();
+        await autoLoginQuery.refetch();
+      } catch (ex) {}
+    };
 
-    if (autoLogin) {
-      if (username && password) {
-        loginFunc(username as string, password as string);
+    prepare().then(() => {
+      const username = userNameQuery.data ?? "";
+      const password = passwordQuery.data ?? "";
+      const autoLogin = autoLoginQuery.data ?? false;
+      console.error("auto login", username, password, autoLogin);
+
+      if (autoLogin) {
+        if (username && password) {
+          loginFunc(username as string, password as string);
+        }
       }
-    }
+    });
   }, [autoLoginQuery.data, passwordQuery.data, userNameQuery.data]);
 
   const onFinish = (values: Record<string, string | boolean>) => {
