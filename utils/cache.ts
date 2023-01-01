@@ -34,7 +34,7 @@ export class CacheManager {
       const data = JSON.parse(cache.value) as { obj: supportType };
       return data.obj;
     } else {
-      return undefined;
+      return null;
     }
   }
 

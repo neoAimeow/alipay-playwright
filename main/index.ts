@@ -199,6 +199,7 @@ export function createIPCHandler({ ipcMain }: { ipcMain: IpcMain }) {
   });
 
   ipcMain.handle("playwright-login", async (event, item: AccountInfo) => {
+    console.error("playwright login invoke");
     await AlipayPlayWright.getInstance().login(item);
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "KFC-Tools",
-  "version": "1.0.7",
+  "version": "1.0.10",
   "description": "",
   "private": true,
   "main": "main/dist/index.cjs",

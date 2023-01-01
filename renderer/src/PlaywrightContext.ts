@@ -8,6 +8,6 @@ import { createContext } from "react";
 export const MyContext = createContext({
   isLogin: false,
   setIsLogin: (isLogin: boolean) => {},
-  isAlipayAccountLogin: false,
-  setIsAlipayAccountLogin: (isAlipayAccountLogin: boolean) => {},
+  isAlipayAccountLoading: false,
+  setIsAlipayAccountLoading: (isAlipayAccountLogin: boolean) => {},
 });

@@ -58,8 +58,9 @@ export class AccountMapper {
         results.push(accountInfo);
       })
     );
+    const sortArr = results.sort((a, b) => a.id - b.id);
 
-    return results;
+    return sortArr;
   }
 
   public async getInvalidAccount(): Promise<Account[]> {

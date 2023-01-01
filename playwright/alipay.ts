@@ -31,6 +31,7 @@ enum ErrorEnum {
   System_Error = 2,
   SMS = 3,
   Not_Login = 4,
+  Need_Reload = 6,
 }
 
 interface ErrorMsg {
@@ -71,6 +72,7 @@ export class AlipayPlayWright {
   private queue: Order[] = [];
   private isRunning = false;
   private whiteList: string[] = [];
+  private loginWhiteList: string[] = [];
 
   private async launchPlaywright(): Promise<Browser> {
     if (this.defer) {
@@ -103,17 +105,30 @@ export class AlipayPlayWright {
         "--disable-blink-features=AutomationControlled", // Web Driver 信息去除
       ],
     });
+
     this.defer.resolve(browser);
     return browser;
   }
 
   public async login(item: AccountInfo): Promise<void> {
+    const existAccount = this.loginWhiteList.find(
+      (str: string) => str === item.account
+    );
+
+    console.error("existAccount", existAccount);
+    if (existAccount) {
+      return;
+    }
+    this.loginWhiteList.push(item.account);
     const browser = await this.launchPlaywright();
     const id = item.id;
     const username = item.account;
     const password = item.password;
     const isShort = item.isShort;
     const context = await browser.newContext(devices["iPhone 13"]);
+    context.on("close", () => {
+      console.error("disconnected");
+    });
     const page = await context.newPage();
 
     const playwrightContext: PlayWrightContext = {
@@ -125,7 +140,7 @@ export class AlipayPlayWright {
     };
 
     await page.goto(loginUrl, {
-      timeout: 1000,
+      timeout: 30000,
       waitUntil: "domcontentloaded",
     });
 
@@ -213,6 +228,9 @@ export class AlipayPlayWright {
       await this.saveCookies(username, cookies);
       await context.close();
     }
+    this.loginWhiteList = this.loginWhiteList.filter(
+      (str) => str === item.account
+    );
   }
 
   public async loginAll(): Promise<void> {
@@ -301,7 +319,7 @@ export class AlipayPlayWright {
         const page = await context.newPage();
 
         await page.goto(order.payUrl, {
-          timeout: 1000,
+          timeout: 30000,
           waitUntil: "domcontentloaded",
         });
 
@@ -379,6 +397,18 @@ export class AlipayPlayWright {
         const selector = await page.$(".my-adm-input__label");
         if (selector && !isLogin) {
           resolve({ reason: ErrorEnum.Not_Login, message: "未登录", context });
+        }
+      } catch (ex) {}
+
+      try {
+        const selector = await page.$(".adm-error-block-description-title");
+        if ((await selector?.textContent()) === "系统繁忙") {
+          // h5pay-error__reload
+          resolve({
+            reason: ErrorEnum.Need_Reload,
+            message: "系统繁忙",
+            context,
+          });
         }
       } catch (ex) {}
 
@@ -540,6 +570,9 @@ export class AlipayPlayWright {
         break;
       case ErrorEnum.Not_Login:
         await this.loginAll();
+        break;
+      case ErrorEnum.Need_Reload:
+        await this.click(context, ".h5pay-error__reload");
         break;
       default:
         break;

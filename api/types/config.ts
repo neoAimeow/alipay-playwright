@@ -1,5 +1,11 @@
 export interface SystemConfig {
   timeoutDuration?: number;
-  isOpenSound?: boolean;
   isCloseWindow?: boolean;
+  autoLoginAlipay?: boolean;
 }
+
+export const defaultSystemConfig = {
+  timeoutDuration: 15,
+  isCloseWindow: true,
+  autoLoginAlipay: false,
+};

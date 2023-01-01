@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 
 const useIntervalAsync = <R = unknown>(fn: () => R, ms: number) => {
   const runningCount = useRef(0);
@@ -24,7 +24,7 @@ const useIntervalAsync = <R = unknown>(fn: () => R, ms: number) => {
     return result;
   }, [fn, next]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     mountedRef.current = true;
     run();
 

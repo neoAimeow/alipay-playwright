@@ -7,6 +7,8 @@ import "./style.css";
 import { Outlet, useNavigate } from "react-router-dom";
 import LoginView from "../login-view/login-view";
 import { MyContext } from "../../PlaywrightContext";
+import { trpc } from "../../../../utils/trpc";
+import { SystemConfig } from "../../../../api/types/config";
 // import eventBus from "../../../../utils/event";
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -19,7 +21,8 @@ const items: MenuProps["items"] = [
 ];
 const HomeView: React.FC = () => {
   const navigate = useNavigate();
-  const context = useContext(MyContext);
+  const myContext = useContext(MyContext);
+  const context = trpc.useContext();
 
   const onClick: MenuProps["onClick"] = (e) => {
     switch (e.key) {
@@ -37,7 +40,7 @@ const HomeView: React.FC = () => {
         break;
     }
   };
-  return context.isLogin ? (
+  return myContext.isLogin ? (
     <div className="home-view">
       <Layout hasSider>
         <Sider
@@ -86,10 +89,18 @@ const HomeView: React.FC = () => {
   ) : (
     <LoginView
       isLoginCallBack={async () => {
-        context.setIsLogin(true);
-        context.setIsAlipayAccountLogin(false);
-        await window.playwright.loginAll();
-        context.setIsAlipayAccountLogin(true);
+        myContext.setIsLogin(true);
+
+        const config = (await context.store.getStore.fetch({
+          key: "system_config",
+        })) as SystemConfig;
+        console.error("config is ", config);
+        if (config.autoLoginAlipay) {
+          console.error("autoLogin and login alipay");
+          myContext.setIsAlipayAccountLoading(true);
+          await window.playwright.loginAll();
+          myContext.setIsAlipayAccountLoading(false);
+        }
       }}
     />
   );

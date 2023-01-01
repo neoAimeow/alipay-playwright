@@ -68,12 +68,6 @@ const LoginView = (props: LoginViewProps) => {
   const userContext = trpc.useContext().user;
   const storeContext = trpc.useContext().store;
 
-  const userNameQuery = trpc.store.getStore.useQuery({ key: "input_username" });
-  const passwordQuery = trpc.store.getStore.useQuery({ key: "input_password" });
-  const autoLoginQuery = trpc.store.getStore.useQuery({
-    key: "input_autoLogin",
-  });
-
   const storeMutation = trpc.store.setStore.useMutation();
   const heartBeatMutation = trpc.user.heartBeat.useMutation();
 
@@ -107,25 +101,24 @@ const LoginView = (props: LoginViewProps) => {
   useLayoutEffect(() => {
     const prepare = async () => {
       try {
-        await userNameQuery.refetch();
-        await passwordQuery.refetch();
-        await autoLoginQuery.refetch();
+        const username =
+          (await storeContext.getStore.fetch({ key: "input_username" })) ?? "";
+        const password =
+          (await storeContext.getStore.fetch({ key: "input_password" })) ?? "";
+        const autoLogin =
+          (await storeContext.getStore.fetch({ key: "input_autoLogin" })) ??
+          false;
+        console.error("auto login", username, password, autoLogin);
+        if (autoLogin) {
+          if (username && password) {
+            loginFunc(username as string, password as string);
+          }
+        }
       } catch (ex) {}
     };
 
-    prepare().then(() => {
-      const username = userNameQuery.data ?? "";
-      const password = passwordQuery.data ?? "";
-      const autoLogin = autoLoginQuery.data ?? false;
-      console.error("auto login", username, password, autoLogin);
-
-      if (autoLogin) {
-        if (username && password) {
-          loginFunc(username as string, password as string);
-        }
-      }
-    });
-  }, [autoLoginQuery.data, passwordQuery.data, userNameQuery.data]);
+    prepare().then(() => {});
+  }, []);
 
   const onFinish = (values: Record<string, string | boolean>) => {
     const { un, pwd, al } = values;
@@ -203,7 +196,9 @@ const LoginView = (props: LoginViewProps) => {
           // type="primary"
           style={{ width: "100%", height: "45px", marginTop: "50px" }}
           onClick={async () => {
-            const url = await storeContext.getStore.fetch({ key: "base_url" });
+            const url =
+              (await storeContext.getStore.fetch({ key: "base_url" })) ??
+              defaultUrl;
             console.error("showModal", url);
 
             showModal({

@@ -13,7 +13,7 @@ import { MyContext } from "./PlaywrightContext";
 
 function App() {
   const [isLogin, setIsLogin] = useState<boolean>(false);
-  const [isAlipayAccountLogin, setIsAlipayAccountLogin] =
+  const [isAlipayAccountLoading, setIsAlipayAccountLoading] =
     useState<boolean>(false);
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => {
@@ -29,8 +29,8 @@ function App() {
           value={{
             isLogin,
             setIsLogin,
-            isAlipayAccountLogin,
-            setIsAlipayAccountLogin,
+            isAlipayAccountLoading,
+            setIsAlipayAccountLoading,
           }}
         >
           <Router>

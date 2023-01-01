@@ -20,6 +20,10 @@ import { Order } from "../../../../api/router/order";
 import useIntervalAsync from "../../../../utils/use-interval";
 import { containsOnlyNumber } from "../../../../utils/string-util";
 import { MyContext } from "../../PlaywrightContext";
+import {
+  defaultSystemConfig,
+  SystemConfig,
+} from "../../../../api/types/config";
 
 interface AccountRef {
   account?: string;
@@ -75,6 +79,8 @@ const accountModal = (param: {
 const AccountView: React.FC = () => {
   const [accounts, setAccounts] = useState<AccountInfo[]>([]);
   const [invalidAccounts, setInvalidAccounts] = useState<AccountInfo[]>([]);
+  const [isPageAlipayLoading, setPageAlipayLoading] = useState<boolean>(false);
+  const [reloadDebounce, setReloadDebounce] = useState<boolean>(false);
   const inputValueRef = useRef<AccountRef>({});
   const [loginLoadings, setLoginLoadings] = useState<boolean[]>([]);
 
@@ -105,19 +111,50 @@ const AccountView: React.FC = () => {
   };
 
   const reloadData = useCallback(() => {
+    if (reloadDebounce) {
+      return;
+    }
+    setReloadDebounce(true);
     const fetchData = async () => {
+      const config = (await context.store.getStore.fetch({
+        key: "system_config",
+      })) as SystemConfig;
       const validAccount = await context.account.getValidAccount.fetch();
       setAccounts(validAccount);
 
       const invalidAccount = await context.account.getInvalidAccount.fetch();
       setInvalidAccounts(invalidAccount);
+      console.error("start invoke alipay", isPageAlipayLoading);
+
+      if (config.autoLoginAlipay && !isPageAlipayLoading) {
+        setPageAlipayLoading(true);
+        console.error("loading alipay", isPageAlipayLoading);
+
+        console.error("validAcocunt", validAccount);
+        await Promise.all(
+          validAccount.map(async (item, index) => {
+            if (!item.isLogin) {
+              enterLoginLoading(index);
+              console.error("login alipay", item);
+              await window.playwright.login(item);
+              outLoginLoading(index);
+            }
+          })
+        );
+
+        setPageAlipayLoading(false);
+      }
 
       const orders = await context.order.getOrder.fetch();
       window.playwright.pay(orders);
     };
-    fetchData().catch((ex) => {
-      console.error(ex);
-    });
+    fetchData()
+      .catch((ex) => {
+        console.error(ex);
+      })
+      .finally(() => {
+        setReloadDebounce(false);
+      });
   }, []);
 
   useIntervalAsync(reloadData, 3000);
@@ -136,7 +173,7 @@ const AccountView: React.FC = () => {
                 accountModal({
                   ref: inputValueRef,
                   type: "create",
-                  onOk: (ref: AccountRef) => {
+                  onOk: async (ref: AccountRef) => {
                     const { account, password } = ref;
                     if (
                       !account ||
@@ -149,12 +186,13 @@ const AccountView: React.FC = () => {
 
                     const isShort =
                       containsOnlyNumber(password) && password.length === 6;
-
-                    accountAddMutation.mutate({
+                    await accountAddMutation.mutateAsync({
                       account: account,
                       password: password,
                       isShort: isShort,
                     });
+
+                    await reloadData();
                   },
                 });
               }}
@@ -211,101 +249,99 @@ const AccountView: React.FC = () => {
               dataIndex="id"
               key="id"
               align="center"
-              render={(value, record, index) => (
-                <div>
-                  <Space
-                    direction="vertical"
-                    size="middle"
-                    style={{ display: "flex" }}
-                  >
-                    <Space>
-                      <Button
-                        onClick={() => {
-                          const invalidAccountMutate = async () => {
-                            await accountInvalidAccountMutation.mutateAsync({
-                              id: value as number,
-                              reason: "手动失效",
-                            });
-                          };
-                          invalidAccountMutate()
-                            .then(() => {
-                              reloadData();
-                            })
-                            .catch((ex) => {
-                              console.error(ex);
-                            });
-                        }}
-                      >
-                        设为失效
-                      </Button>
-
-                      <Button
-                        onClick={() => {
-                          accountModal({
-                            ref: inputValueRef,
-                            type: "update",
-                            account: record as AccountInfo,
-                            onOk: (ref: AccountRef) => {
-                              const { password } = ref;
-                              if (password == "" || !password) {
-                                return;
-                              }
-                              const isShort =
-                                containsOnlyNumber(password) &&
-                                password.length === 6;
-
-                              accountUpdateMutation.mutate({
+              render={(value, record, index) => {
+                return (
+                  <div>
+                    <Space
+                      direction="vertical"
+                      size="middle"
+                      style={{ display: "flex" }}
+                    >
+                      <Space>
+                        <Button
+                          onClick={() => {
+                            const invalidAccountMutate = async () => {
+                              await accountInvalidAccountMutation.mutateAsync({
                                 id: value as number,
-                                password: password,
-                                isShort: isShort,
+                                reason: "手动失效",
                               });
-                            },
-                          });
-                        }}
-                      >
-                        编辑
-                      </Button>
-                    </Space>
+                            };
+                            invalidAccountMutate()
+                              .then(() => {
+                                reloadData();
+                              })
+                              .catch((ex) => {
+                                console.error(ex);
+                              });
+                          }}
+                        >
+                          设为失效
+                        </Button>
 
-                    <Space>
-                      <Button
-                        loading={
-                          loginLoadings[index] ||
-                          !myContext.isAlipayAccountLogin
-                        }
-                        disabled={(record as AccountInfo).isLogin}
-                        onClick={async () => {
-                          console.error(record);
-                          enterLoginLoading(index);
-                          await window.playwright.login(record as AccountInfo);
-                          outLoginLoading(index);
-                        }}
-                      >
-                        {(record as AccountInfo).isLogin ? "已登录" : "未登录"}
-                      </Button>
+                        <Button
+                          onClick={() => {
+                            accountModal({
+                              ref: inputValueRef,
+                              type: "update",
+                              account: record as AccountInfo,
+                              onOk: (ref: AccountRef) => {
+                                const { password } = ref;
+                                if (password == "" || !password) {
+                                  return;
+                                }
+                                const isShort =
+                                  containsOnlyNumber(password) &&
+                                  password.length === 6;
 
-                      <Button
-                        onClick={() => {
-                          const disableMutate = async () => {
+                                accountUpdateMutation.mutate({
+                                  id: value as number,
+                                  password: password,
+                                  isShort: isShort,
+                                });
+                              },
+                            });
+                          }}
+                        >
+                          编辑
+                        </Button>
+                      </Space>
+
+                      <Space>
+                        <Button
+                          loading={
+                            loginLoadings[index] ||
+                            myContext.isAlipayAccountLoading
+                          }
+                          disabled={(record as AccountInfo).isLogin}
+                          onClick={async () => {
+                            console.error(record);
+                            enterLoginLoading(index);
+                            await window.playwright.login(
+                              record as AccountInfo
+                            );
+                            outLoginLoading(index);
+                            reloadData();
+                          }}
+                        >
+                          {(record as AccountInfo).isLogin ? "已登录" : "登录"}
+                        </Button>
+
+                        <Button
+                          onClick={async () => {
+                            const account = (record as AccountInfo).account;
                             await accountDisableMutation.mutateAsync({
-                              account: value as string,
+                              account: account,
                             });
-                          };
-                          disableMutate()
-                            .then(() => {
-                              reloadData();
-                            })
-                            .catch((ex) => {
-                              console.error(ex);
-                            });
-                        }}
-                      >
-                        删除帐号
-                      </Button>
+                            reloadData();
+                          }}
+                        >
+                          删除帐号
+                        </Button>
+                      </Space>
                     </Space>
-                  </Space>
-                </div>
-              )}
+                  </div>
+                );
+              }}
             />
           </Table>
         </Card>

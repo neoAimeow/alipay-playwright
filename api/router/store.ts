@@ -7,15 +7,15 @@ export const storeRouter = t.router({
   getStore: t.procedure
     .input(z.object({ key: z.string() }))
     .query(async ({ ctx, input }) => {
-      const data = await CacheManager.getInstance(ctx.prisma).getStore(
-        input.key
-      );
-      if (!data) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: "取值为空",
-        });
-      }
+      // const data = await CacheManager.getInstance(ctx.prisma).getStore(
+      //   input.key
+      // );
+      // if (!data) {
+      //   throw new TRPCError({
+      //     code: "NOT_FOUND",
+      //     message: "取值为空",
+      //   });
+      // }
 
       return CacheManager.getInstance(ctx.prisma).getStore(input.key);
     }),
