@@ -61,7 +61,7 @@ const ConfigView: React.FC = () => {
     <div className="dash-card">
       <Card title="设置" bordered={false}>
         <Space direction="vertical">
-          <div>当前版本号：1.0.10</div>
+          <div>当前版本号：1.0.11</div>
           <NumericInput
             style={{ width: 120 }}
             value={timeoutValue}

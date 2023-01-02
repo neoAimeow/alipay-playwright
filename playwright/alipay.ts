@@ -111,131 +111,100 @@ export class AlipayPlayWright {
   }
 
   public async login(item: AccountInfo): Promise<void> {
-    const existAccount = this.loginWhiteList.find(
-      (str: string) => str === item.account
-    );
+    return new Promise(async (resolve, reject) => {
+      const existAccount = this.loginWhiteList.find(
+        (str: string) => str === item.account
+      );
 
-    console.error("existAccount", existAccount);
-    if (existAccount) {
-      return;
-    }
-    this.loginWhiteList.push(item.account);
-    const browser = await this.launchPlaywright();
-    const id = item.id;
-    const username = item.account;
-    const password = item.password;
-    const isShort = item.isShort;
-    const context = await browser.newContext(devices["iPhone 13"]);
-    context.on("close", () => {
-      console.error("disconnected");
-    });
-    const page = await context.newPage();
+      if (existAccount) {
+        reject("account exist in whiteList");
+        return;
+      }
+      this.loginWhiteList.push(item.account);
+      const browser = await this.launchPlaywright();
+      const id = item.id;
+      const username = item.account;
+      const password = item.password;
+      const isShort = item.isShort;
+      const context = await browser.newContext(devices["iPhone 13"]);
+      context.on("close", () => {
+        console.error("disconnected");
+      });
 
-    const playwrightContext: PlayWrightContext = {
-      browserContext: context,
-      page,
-      timeout: 3000,
-      account: item,
-      isLogin: true,
-    };
+      const page = await context.newPage();
 
-    await page.goto(loginUrl, {
-      timeout: 30000,
-      waitUntil: "domcontentloaded",
-    });
+      const playwrightContext: PlayWrightContext = {
+        browserContext: context,
+        page,
+        timeout: 3000,
+        account: item,
+        isLogin: true,
+      };
 
-    await this.click(playwrightContext, ".h5RouteAppSenior__h5pay");
-    await this.type(playwrightContext, ".adm-input-element", username);
-    await this.click(playwrightContext, "button:has-text('下一步')");
-    //
-    // await page.locator(".h5RouteAppSenior__h5pay").click();
-    // await page.locator(".adm-input-element").fill(username);
-    // await page.locator("button:has-text('下一步')").click();
+      await page.goto(loginUrl, {
+        timeout: 30000,
+        waitUntil: "domcontentloaded",
+      });
 
-    await page.waitForEvent("requestfinished");
-    await page.waitForLoadState("domcontentloaded");
-    await page.waitForTimeout(1000);
+      await this.click(playwrightContext, ".h5RouteAppSenior__h5pay");
+      await this.type(playwrightContext, ".adm-input-element", username);
+      await this.click(playwrightContext, "button:has-text('下一步')");
 
-    const content = await page.content();
-    if (content.match("账号不存在")) {
-      await this.invalidUser(id, "帐号不存在");
-      await context.close();
-      return;
-    } else if (content.match("输入短信验证码")) {
-      await this.click(playwrightContext, ".toAccountLoginWrap___2ir3r");
-      // await page.locator(".toAccountLoginWrap___2ir3r").click();
+      await page.waitForEvent("requestfinished");
+      await page.waitForLoadState("domcontentloaded");
       await page.waitForTimeout(1000);
-      //
 
-      console.error("wait for enter password when sms in");
-      // await page.waitForSelector(".my-passcode-input-native-input", {
-      //   timeout: 3000,
-      // });
-      // await page.type(".my-passcode-input-native-input", password, {
-      //   delay: 20,
-      // });
-      await page.locator(".my-passcode-input-native-input").fill(password);
+      const content = await page.content();
+      if (content.match("账号不存在")) {
+        await this.invalidUser(id, "帐号不存在");
+        await context.close();
+        return;
+      } else if (content.match("输入短信验证码")) {
+        await this.click(playwrightContext, ".toAccountLoginWrap___2ir3r");
+        await page.waitForTimeout(1000);
+        await page.locator(".my-passcode-input-native-input").fill(password);
+        await this.click(playwrightContext, ".adm-button-large");
 
-      // await this.type(
-      //   playwrightContext,
-      //   ".my-passcode-input-native-input",
-      //   password
-      // );
+        await page.waitForTimeout(1000);
+        const finalStepContent = await page.content();
 
-      // await page.locator(".adm-button-large").click();
-      await this.click(playwrightContext, ".adm-button-large");
-
-      await page.waitForTimeout(1000);
-      const finalStepContent = await page.content();
-
-      if (finalStepContent.match("支付密码不正确")) {
-        await this.invalidUser(id, "支付密码不正确");
+        if (finalStepContent.match("支付密码不正确")) {
+          await this.invalidUser(id, "支付密码不正确");
+        } else {
+          // save cookie
+          const cookies = await context.cookies();
+          await this.saveCookies(username, cookies);
+          await context.close();
+        }
       } else {
-        // save cookie
+        if (isShort) {
+          await this.type(
+            playwrightContext,
+            ".my-passcode-input-native-input",
+            password
+          );
+        } else {
+          await this.type(
+            playwrightContext,
+            ".adm-input-element >> nth=1",
+            password
+          );
+        }
+
+        await this.click(playwrightContext, "button:has-text('下一步')");
+
         const cookies = await context.cookies();
         await this.saveCookies(username, cookies);
         await context.close();
       }
-    } else {
-      if (isShort) {
-        await this.type(
-          playwrightContext,
-          ".my-passcode-input-native-input",
-          password
-        );
-
-        // await page.waitForSelector(".my-passcode-input-native-input", {
-        //   timeout: 3000,
-        // });
-        // await page.type(".my-passcode-input-native-input", password, {
-        //   delay: 20,
-        // });
-      } else {
-        await this.type(
-          playwrightContext,
-          ".adm-input-element >> nth=1",
-          password
-        );
-
-        // await page.locator(".adm-input-element >> nth=1").fill(password);
-      }
-
-      await this.click(playwrightContext, "button:has-text('下一步')");
-
-      // await page.locator("button:has-text('下一步')").click();
-      // save cookie
-      const cookies = await context.cookies();
-      await this.saveCookies(username, cookies);
-      await context.close();
-    }
-    this.loginWhiteList = this.loginWhiteList.filter(
-      (str) => str === item.account
-    );
+      this.loginWhiteList = this.loginWhiteList.filter(
+        (str) => str === item.account
+      );
+    });
   }
 
   public async loginAll(): Promise<void> {
-    const account = await this.loadUsers();
-
+    const account = await AccountMapper.getInstance(prisma).getValidAccount();
     await Promise.all(
       account.map(async (item) => {
         await this.login(item);
@@ -244,7 +213,6 @@ export class AlipayPlayWright {
   }
 
   public async addTasks(orders: Order[]): Promise<void> {
-    console.error("addTasks", this.queue);
     orders.map((item) => {
       const existOrder = this.whiteList.find(
         (str: string) => str === item.kfcOrderId
@@ -258,13 +226,11 @@ export class AlipayPlayWright {
   }
 
   private async runTask(): Promise<void> {
-    console.error("runTask", this.isRunning);
-
     if (this.isRunning) {
       return;
     }
 
-    const accounts = await this.loadUsers();
+    const accounts = await AccountMapper.getInstance(prisma).getValidAccount();
     const validAccounts = accounts.filter(
       (account: AccountInfo) =>
         account.isLogin &&
@@ -307,8 +273,6 @@ export class AlipayPlayWright {
 
   public async pay(order: Order, account: AccountInfo): Promise<PayResult> {
     return new Promise(async (resolve, reject) => {
-      console.error("pay", order, account);
-
       await AccountStateManager.getInstance().accountToWork(account.account);
       const browser = await this.launchPlaywright();
       if (account && order && order.payUrl) {
@@ -467,8 +431,6 @@ export class AlipayPlayWright {
     selector: string
   ): Promise<Boolean> {
     return new Promise((resolve, reject) => {
-      console.error("selector clicked:", selector);
-
       const { page, timeout } = context;
       this.catchError(context)
         .then((res) => {
@@ -493,8 +455,6 @@ export class AlipayPlayWright {
     callback?: () => void
   ): Promise<Boolean> {
     return new Promise((resolve, reject) => {
-      console.error("selector located:", selector);
-
       const { page, timeout } = context;
       this.catchError(context)
         .then((res) => {
@@ -519,8 +479,6 @@ export class AlipayPlayWright {
     word: string
   ): Promise<Boolean> {
     return new Promise(async (resolve, reject) => {
-      console.error("selector type:", selector);
-
       const { page } = context;
 
       try {
@@ -577,11 +535,6 @@ export class AlipayPlayWright {
       default:
         break;
     }
-  }
-
-  // 加载可用帐号
-  private loadUsers(): Promise<AccountInfo[]> {
-    return AccountMapper.getInstance(prisma).getValidAccount();
   }
 
   // 将用户加到黑名单中

@@ -138,6 +138,13 @@ const AccountView: React.FC = () => {
               console.error("login alipay", item);
               await window.playwright.login(item);
               outLoginLoading(index);
+              const validAccount =
+                await context.account.getValidAccount.fetch();
+              setAccounts(validAccount);
+
+              const invalidAccount =
+                await context.account.getInvalidAccount.fetch();
+              setInvalidAccounts(invalidAccount);
             }
           })
         );
