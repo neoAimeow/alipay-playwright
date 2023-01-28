@@ -13,6 +13,7 @@ export enum ErrorEnum {
   SMS = 3,
   Not_Login = 4,
   Need_Reload = 6,
+  Need_Refresh = 7
 }
 
 export interface ErrorMsg {

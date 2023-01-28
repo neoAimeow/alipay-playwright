@@ -18,6 +18,27 @@ export async function catchError(
 
     await page.waitForTimeout(1000);
 
+    // try {
+    //   console.error(await page.content())
+    //   const selector  = await page.waitForSelector(".adm-auto-center-content", { timeout:3000 });
+    //   // const selector = await page.$(".adm-auto-center-content");
+    //
+    //   if (selector) {
+    //     // h5pay-error__reload
+    //     console.error("there is issue cause", "当前操作可能存在风险，为保护资金安全，我们中断了此次操作。如需帮助请致电95188")
+    //     resolve({
+    //       reason: ErrorEnum.Need_Refresh,
+    //       message: "被风控了",
+    //       context,
+    //     });
+    //   }
+    //
+    //   //
+    // } catch (ex) {
+    //
+    // }
+
+
     // TODO: 优化耗时
     try {
       const selector = await page.$(".my-adm-input__label");
@@ -37,6 +58,7 @@ export async function catchError(
         });
       }
     } catch (ex) {}
+
 
     try {
       const selector = await page.$(".adm-error-block-description-title");
@@ -92,7 +114,7 @@ export async function click(
   context: PlayWrightContext,
   selector: string,
   errorHandler?: (context: PlayWrightContext, res: ErrorMsg) => void
-): Promise<Boolean> {
+): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const { page, timeout } = context;
     catchError(context)

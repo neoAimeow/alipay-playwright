@@ -124,7 +124,7 @@ export class AlipayPlayWright {
     item: AccountInfo,
     context: BrowserContext,
     page: Page
-  ): Promise<void> {
+  ): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
       try {
         const playwrightContext: PlayWrightContext = {
@@ -154,7 +154,15 @@ export class AlipayPlayWright {
         await click(
           playwrightContext,
           "button:has-text('下一步')",
-          (context, res) => this.handleError(context, res)
+           async (context, res) => {
+            // console.error("下一步出错了", res)
+            // if (res.reason === ErrorEnum.Need_Refresh) {
+            //   console.error("被风控了")
+            //   reject(new Error("被风控了，需要刷新"))
+            // }
+
+             await this.handleError(context, res);
+           }
         );
 
         await page.waitForEvent("requestfinished");
@@ -188,7 +196,7 @@ export class AlipayPlayWright {
             // save cookie
             const cookies = await context.cookies();
             await saveCookies(item.account, cookies);
-            resolve();
+            resolve(true);
           }
         } else {
           if (item.isShort) {
@@ -215,6 +223,7 @@ export class AlipayPlayWright {
 
           const cookies = await context.cookies();
           await saveCookies(item.account, cookies);
+          resolve(true);
         }
       } catch (ex) {
         console.error(ex);
