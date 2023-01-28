@@ -27,6 +27,7 @@ async function createWindow() {
       sandbox: true,
       webSecurity: true,
       webviewTag: false,
+      backgroundThrottling: false,
       preload: join(app.getAppPath(), "preload/dist/index.cjs"),
     },
   });
