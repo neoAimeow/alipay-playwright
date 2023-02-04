@@ -1,4 +1,4 @@
-import { webkit, Browser, Page, devices } from "playwright";
+import { chromium, Browser, Page, devices } from "playwright";
 import { prisma } from "../api/db/client";
 import promiseDefer, { Deferred } from "../utils/defer";
 import { AccountMapper } from "../mapper/account.mapper";
@@ -12,9 +12,9 @@ import path from "path";
 import { SystemConfig } from "../api/types/config";
 import { retryDecorator } from "ts-retry-promise";
 import {
+  defaultLoginUrl,
   ErrorEnum,
   ErrorMsg,
-  loginUrl,
   PayResult,
   PlayWrightContext,
 } from "./type";
@@ -29,6 +29,7 @@ import {
   saveCookies,
   type,
 } from "./alipay-utils";
+import { getAlipayLoginUrl } from "../api/request/base";
 
 export class AlipayPlayWright {
   private static instance: AlipayPlayWright | undefined;
@@ -68,7 +69,7 @@ export class AlipayPlayWright {
     }
 
     const config: SystemConfig = await getSystemConfig();
-    const browser = await webkit.launch({
+    const browser = await chromium.launch({
       ...executablePathObj,
       headless: config.isCloseWindow ?? true,
       args: [
@@ -102,7 +103,7 @@ export class AlipayPlayWright {
       const page = await context.newPage();
 
       const retryFunc = retryDecorator(this.loginLogic, {
-        retries: 3,
+        retries: 5,
         delay: 1000,
         retryIf: () => {
           console.error("is retrying");
@@ -134,7 +135,8 @@ export class AlipayPlayWright {
           account: item,
           isLogin: true,
         };
-
+        const loginUrl = (await getAlipayLoginUrl()) ?? defaultLoginUrl;
+        console.error("login url", loginUrl);
         await page.goto(loginUrl, {
           timeout: 30000,
           waitUntil: "domcontentloaded",
@@ -154,15 +156,15 @@ export class AlipayPlayWright {
         await click(
           playwrightContext,
           "button:has-text('下一步')",
-           async (context, res) => {
+          async (context, res) => {
             // console.error("下一步出错了", res)
             // if (res.reason === ErrorEnum.Need_Refresh) {
             //   console.error("被风控了")
             //   reject(new Error("被风控了，需要刷新"))
             // }
 
-             await this.handleError(context, res);
-           }
+            await this.handleError(context, res);
+          }
         );
 
         await page.waitForEvent("requestfinished");
