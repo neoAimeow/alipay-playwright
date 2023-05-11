@@ -1,3 +1,5 @@
+支付宝kfc工具源码。欢迎各路人马来看这个项目的问题和完成度。
+
 Based on: https://github.com/cawa-93/vite-electron-builder
 The tRPC over IPC code is based on [the electron-trpc package](https://github.com/jsonnull/electron-trpc), adapted to support tRPC v10 by using [tRPC source](https://github.com/trpc/trpc/tree/next).
 
